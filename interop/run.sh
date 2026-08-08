@@ -9,6 +9,7 @@ cd "$(dirname "$0")"
 command -v go >/dev/null || { echo "go toolchain required"; exit 1; }
 
 if [ ! -f certs/server.crt ]; then
+  mkdir -p certs
   openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
     -keyout certs/server.key -out certs/server.crt \
     -subj "/CN=localhost" \
