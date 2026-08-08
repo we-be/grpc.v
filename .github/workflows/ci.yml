@@ -27,6 +27,13 @@ jobs:
         with:
           check-latest: true
 
+      # the interop suites build grpc-go / connect-go reference peers
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
       - name: Link modules into vmodules
         run: |
           mkdir -p ~/.vmodules
