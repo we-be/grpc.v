@@ -25,7 +25,7 @@ V's stdlib gained HTTP/2 (client + server) in June 2026. What that means here:
 1. ~~Message framing + status codes~~
 2. ~~`service`/`rpc` parsing and stub codegen (`vpbgen -grpc`)~~
 3. ~~Unary gRPC client over stdlib HTTP/2 (TLS)~~
-4. Integration test against a real gRPC server (Go) — prove the wire story live
+4. ~~Integration test against a real gRPC server (Go)~~ — `interop/run.sh` runs the V client's assertions against grpc-go over TLS/h2: unary roundtrips, byte payloads, and error statuses with percent-encoded unicode messages all pass
 5. Connect-protocol unary server on the stdlib HTTP/1.1 server
 6. Upstream V: response trailers + h2c, then a native gRPC server + streaming
 

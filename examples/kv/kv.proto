@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package kv;
 
+option go_package = "example.com/kvserver/kv";
+
 message GetRequest {
   string key = 1;
 }
