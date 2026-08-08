@@ -2,9 +2,12 @@
 
 gRPC for V, built on [protobuf.v](https://github.com/we-be/protobuf.v).
 
-Working unary client. Wire framing, status codes (with `StatusError` and
-percent-encoded `grpc-message` handling), `Client.unary` over stdlib
-HTTP/2, and generated client stubs via protobuf.v's `vpbgen -grpc`
+Working unary client (gRPC over HTTP/2) and unary server
+([Connect protocol](https://connectrpc.com) over HTTP/1.1, proto + JSON
+codecs). Wire framing, status codes (with `StatusError` and
+percent-encoded `grpc-message` handling), `Client.unary`, and
+`ConnectServer` with generated per-service handler interfaces and
+dispatch — all via protobuf.v's `vpbgen -grpc -json`
 (see [examples/kv](examples/kv)).
 
 ## Transport reality (V master, 2026-08)
@@ -26,7 +29,7 @@ V's stdlib gained HTTP/2 (client + server) in June 2026. What that means here:
 2. ~~`service`/`rpc` parsing and stub codegen (`vpbgen -grpc`)~~
 3. ~~Unary gRPC client over stdlib HTTP/2 (TLS)~~
 4. ~~Integration test against a real gRPC server (Go)~~ — `interop/run.sh` runs the V client's assertions against grpc-go over TLS/h2: unary roundtrips, byte payloads, and error statuses with percent-encoded unicode messages all pass
-5. Connect-protocol unary server on the stdlib HTTP/1.1 server
+5. ~~Connect-protocol unary server on the stdlib HTTP/1.1 server~~ — `interop/connect_run.sh` runs connect-go clients against the V server in both codecs, all green
 6. Upstream V: response trailers + h2c, then a native gRPC server + streaming
 
 ## Development

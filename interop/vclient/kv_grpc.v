@@ -19,3 +19,50 @@ pub fn (mut x KVClient) put(req PutRequest) !PutResponse {
 }
 
 // rpc Scan skipped: server streaming is not supported yet
+
+pub interface KVHandler {
+mut:
+	get(req GetRequest) !GetResponse
+	put(req PutRequest) !PutResponse
+}
+
+pub struct KVService {
+pub mut:
+	h KVHandler
+}
+
+pub fn (mut s KVService) call(path string, codec grpc.Codec, body []u8) !([]u8, bool) {
+	match path {
+		'/kv.KV/Get' {
+			req := if codec == .json {
+				GetRequest.from_json(body.bytestr())!
+			} else {
+				GetRequest.decode(body)!
+			}
+			resp := s.h.get(req)!
+			out := if codec == .json {
+				resp.json().bytes()
+			} else {
+				resp.encode()
+			}
+			return out, true
+		}
+		'/kv.KV/Put' {
+			req := if codec == .json {
+				PutRequest.from_json(body.bytestr())!
+			} else {
+				PutRequest.decode(body)!
+			}
+			resp := s.h.put(req)!
+			out := if codec == .json {
+				resp.json().bytes()
+			} else {
+				resp.encode()
+			}
+			return out, true
+		}
+		else {
+			return []u8{}, false
+		}
+	}
+}

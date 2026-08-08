@@ -1,2 +1,4 @@
 certs/
 goserver/kvserver
+vserver/vserver-bin
+goserver/connectclient-bin
