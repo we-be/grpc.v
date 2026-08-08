@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    # setup-v drops the whole V toolchain into the workspace root, and
+    # v fmt/test recurse — keep our tree in a subdir so they never meet
+    defaults:
+      run:
+        working-directory: repo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Setup V
+        uses: vlang/setup-v@v1
+        with:
+          check-latest: true
+
+      - name: Link modules into vmodules
+        run: |
+          mkdir -p ~/.vmodules
+          ln -s "$PWD" ~/.vmodules/grpc
+          git clone --depth 1 https://github.com/we-be/protobuf.v ~/.vmodules/protobuf
+          git clone --depth 1 https://github.com/vlang/leveldb ~/.vmodules/leveldb
+
+      - name: Check formatting
+        run: v fmt -verify .
+
+      - name: Unit tests
+        run: v test .
+
+      - name: Build examples and interop binaries
+        run: |
+          v -o /tmp/kv-ex examples/kv
+          v -o /tmp/kvd-ex examples/kvd
+          v -o /tmp/vclient-ex interop/vclient
+          v -o /tmp/vserver-ex interop/vserver
+
+      # the three live interop suites: V client vs grpc-go over TLS/h2,
+      # connect-go vs the V ConnectServer in both codecs, and the kvd
+      # etcd-lite smoke with a persistence-proving restart
+      - name: gRPC interop (V client vs grpc-go)
+        run: ./interop/run.sh
+
+      - name: Connect interop (connect-go vs V server)
+        run: ./interop/connect_run.sh
+
+      - name: kvd smoke
+        run: ./examples/kvd/smoke.sh
