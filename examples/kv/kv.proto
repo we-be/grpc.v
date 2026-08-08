@@ -1,0 +1,28 @@
+// the etcd-lite dogfood schema: unary get/put now, streaming scan later
+syntax = "proto3";
+
+package kv;
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  bytes value = 1;
+  bool found = 2;
+}
+
+message PutRequest {
+  string key = 1;
+  bytes value = 2;
+}
+
+message PutResponse {
+  bool replaced = 1;
+}
+
+service KV {
+  rpc Get (GetRequest) returns (GetResponse);
+  rpc Put (PutRequest) returns (PutResponse);
+  rpc Scan (GetRequest) returns (stream GetResponse);
+}

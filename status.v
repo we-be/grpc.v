@@ -39,3 +39,51 @@ pub:
 pub fn (s Status) is_ok() bool {
 	return s.code == .ok
 }
+
+// StatusError carries a non-OK RPC outcome as a V error
+pub struct StatusError {
+	Error
+pub:
+	status Status
+}
+
+pub fn (e StatusError) msg() string {
+	if e.status.message == '' {
+		return 'grpc: ${e.status.code}'
+	}
+	return 'grpc: ${e.status.code}: ${e.status.message}'
+}
+
+// grpc-message decoding (spec "Percent-Encoded"): %XX byte sequences,
+// malformed ones pass through untouched
+pub fn percent_decode(s string) string {
+	mut out := []u8{cap: s.len}
+	mut i := 0
+	for i < s.len {
+		if s[i] == `%` && i + 2 < s.len {
+			hi := hex_val(s[i + 1])
+			lo := hex_val(s[i + 2])
+			if hi >= 0 && lo >= 0 {
+				out << (u8(hi) << 4 | u8(lo))
+				i += 3
+				continue
+			}
+		}
+		out << s[i]
+		i++
+	}
+	return out.bytestr()
+}
+
+fn hex_val(c u8) int {
+	if c >= `0` && c <= `9` {
+		return int(c - `0`)
+	}
+	if c >= `a` && c <= `f` {
+		return int(c - `a`) + 10
+	}
+	if c >= `A` && c <= `F` {
+		return int(c - `A`) + 10
+	}
+	return -1
+}

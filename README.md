@@ -2,7 +2,10 @@
 
 gRPC for V, built on [protobuf.v](https://github.com/we-be/protobuf.v).
 
-Early — wire framing and status codes so far.
+Working unary client. Wire framing, status codes (with `StatusError` and
+percent-encoded `grpc-message` handling), `Client.unary` over stdlib
+HTTP/2, and generated client stubs via protobuf.v's `vpbgen -grpc`
+(see [examples/kv](examples/kv)).
 
 ## Transport reality (V master, 2026-08)
 
@@ -20,10 +23,11 @@ V's stdlib gained HTTP/2 (client + server) in June 2026. What that means here:
 ## Roadmap
 
 1. ~~Message framing + status codes~~
-2. `service`/`rpc` parsing and stub codegen (in protobuf.v's `vpbgen`)
-3. Unary gRPC client over stdlib HTTP/2 (TLS)
-4. Connect-protocol unary server on the stdlib HTTP/1.1 server
-5. Upstream V: response trailers + h2c, then a native gRPC server
+2. ~~`service`/`rpc` parsing and stub codegen (`vpbgen -grpc`)~~
+3. ~~Unary gRPC client over stdlib HTTP/2 (TLS)~~
+4. Integration test against a real gRPC server (Go) — prove the wire story live
+5. Connect-protocol unary server on the stdlib HTTP/1.1 server
+6. Upstream V: response trailers + h2c, then a native gRPC server + streaming
 
 ## Development
 
