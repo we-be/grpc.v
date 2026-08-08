@@ -1,7 +1,7 @@
 Module {
 	name: 'grpc'
-	description: 'gRPC for V, built on protobuf.v'
-	version: '0.0.1'
+	description: 'gRPC client and Connect server for V, built on protobuf.v'
+	version: '0.1.0'
 	license: 'MIT'
 	dependencies: []
 }
