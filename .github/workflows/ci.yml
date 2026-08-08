@@ -44,6 +44,10 @@ jobs:
       - name: Check formatting
         run: v fmt -verify .
 
+      # committed *_pb.v/*_grpc.v must match current vpbgen output
+      - name: Generated code up to date
+        run: ./interop/check_generated.sh
+
       - name: Unit tests
         run: v test .
 
