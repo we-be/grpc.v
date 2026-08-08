@@ -5,7 +5,8 @@ import protobuf
 
 pub struct GetRequest {
 pub mut:
-	key string
+	key        string
+	pb_unknown []u8 // unrecognized fields, re-emitted on encode
 }
 
 pub fn (m &GetRequest) encoded_size() int {
@@ -13,13 +14,14 @@ pub fn (m &GetRequest) encoded_size() int {
 	if m.key != '' {
 		n += protobuf.len_field_len(1, m.key.len)
 	}
-	return n
+	return n + m.pb_unknown.len
 }
 
 pub fn (m &GetRequest) encode_to(mut e protobuf.Encoder) {
 	if m.key != '' {
 		e.write_string_field(1, m.key)
 	}
+	e.write_raw(m.pb_unknown)
 }
 
 pub fn (m &GetRequest) encode() []u8 {
@@ -36,6 +38,7 @@ pub fn GetRequest.decode(buf []u8) !GetRequest {
 		buf: buf
 	}
 	for d.more() {
+		tag_start := d.pos
 		field, wt := d.read_tag()!
 		match field {
 			1 {
@@ -43,6 +46,7 @@ pub fn GetRequest.decode(buf []u8) !GetRequest {
 			}
 			else {
 				d.skip(wt)!
+				m.pb_unknown << d.buf[tag_start..d.pos]
 			}
 		}
 	}
@@ -51,8 +55,9 @@ pub fn GetRequest.decode(buf []u8) !GetRequest {
 
 pub struct GetResponse {
 pub mut:
-	value []u8
-	found bool
+	value      []u8
+	found      bool
+	pb_unknown []u8 // unrecognized fields, re-emitted on encode
 }
 
 pub fn (m &GetResponse) encoded_size() int {
@@ -63,7 +68,7 @@ pub fn (m &GetResponse) encoded_size() int {
 	if m.found {
 		n += protobuf.tag_len(2) + 1
 	}
-	return n
+	return n + m.pb_unknown.len
 }
 
 pub fn (m &GetResponse) encode_to(mut e protobuf.Encoder) {
@@ -73,6 +78,7 @@ pub fn (m &GetResponse) encode_to(mut e protobuf.Encoder) {
 	if m.found {
 		e.write_bool_field(2, m.found)
 	}
+	e.write_raw(m.pb_unknown)
 }
 
 pub fn (m &GetResponse) encode() []u8 {
@@ -89,6 +95,7 @@ pub fn GetResponse.decode(buf []u8) !GetResponse {
 		buf: buf
 	}
 	for d.more() {
+		tag_start := d.pos
 		field, wt := d.read_tag()!
 		match field {
 			1 {
@@ -99,6 +106,7 @@ pub fn GetResponse.decode(buf []u8) !GetResponse {
 			}
 			else {
 				d.skip(wt)!
+				m.pb_unknown << d.buf[tag_start..d.pos]
 			}
 		}
 	}
@@ -107,8 +115,9 @@ pub fn GetResponse.decode(buf []u8) !GetResponse {
 
 pub struct PutRequest {
 pub mut:
-	key   string
-	value []u8
+	key        string
+	value      []u8
+	pb_unknown []u8 // unrecognized fields, re-emitted on encode
 }
 
 pub fn (m &PutRequest) encoded_size() int {
@@ -119,7 +128,7 @@ pub fn (m &PutRequest) encoded_size() int {
 	if m.value.len > 0 {
 		n += protobuf.len_field_len(2, m.value.len)
 	}
-	return n
+	return n + m.pb_unknown.len
 }
 
 pub fn (m &PutRequest) encode_to(mut e protobuf.Encoder) {
@@ -129,6 +138,7 @@ pub fn (m &PutRequest) encode_to(mut e protobuf.Encoder) {
 	if m.value.len > 0 {
 		e.write_bytes_field(2, m.value)
 	}
+	e.write_raw(m.pb_unknown)
 }
 
 pub fn (m &PutRequest) encode() []u8 {
@@ -145,6 +155,7 @@ pub fn PutRequest.decode(buf []u8) !PutRequest {
 		buf: buf
 	}
 	for d.more() {
+		tag_start := d.pos
 		field, wt := d.read_tag()!
 		match field {
 			1 {
@@ -155,6 +166,7 @@ pub fn PutRequest.decode(buf []u8) !PutRequest {
 			}
 			else {
 				d.skip(wt)!
+				m.pb_unknown << d.buf[tag_start..d.pos]
 			}
 		}
 	}
@@ -163,7 +175,8 @@ pub fn PutRequest.decode(buf []u8) !PutRequest {
 
 pub struct PutResponse {
 pub mut:
-	replaced bool
+	replaced   bool
+	pb_unknown []u8 // unrecognized fields, re-emitted on encode
 }
 
 pub fn (m &PutResponse) encoded_size() int {
@@ -171,13 +184,14 @@ pub fn (m &PutResponse) encoded_size() int {
 	if m.replaced {
 		n += protobuf.tag_len(1) + 1
 	}
-	return n
+	return n + m.pb_unknown.len
 }
 
 pub fn (m &PutResponse) encode_to(mut e protobuf.Encoder) {
 	if m.replaced {
 		e.write_bool_field(1, m.replaced)
 	}
+	e.write_raw(m.pb_unknown)
 }
 
 pub fn (m &PutResponse) encode() []u8 {
@@ -194,6 +208,7 @@ pub fn PutResponse.decode(buf []u8) !PutResponse {
 		buf: buf
 	}
 	for d.more() {
+		tag_start := d.pos
 		field, wt := d.read_tag()!
 		match field {
 			1 {
@@ -201,6 +216,7 @@ pub fn PutResponse.decode(buf []u8) !PutResponse {
 			}
 			else {
 				d.skip(wt)!
+				m.pb_unknown << d.buf[tag_start..d.pos]
 			}
 		}
 	}
