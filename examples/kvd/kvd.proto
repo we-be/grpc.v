@@ -1,0 +1,56 @@
+// etcd-lite: the dogfood service — vlang/leveldb storage behind a
+// Connect API, all codegen from vpbgen -grpc -json
+syntax = "proto3";
+
+package kvd;
+
+option go_package = "example.com/kvd/kvd";
+
+message GetRequest {
+  bytes key = 1;
+}
+
+message GetResponse {
+  bytes value = 1;
+  bool found = 2;
+}
+
+message PutRequest {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message PutResponse {
+  bool replaced = 1;
+}
+
+message DeleteRequest {
+  bytes key = 1;
+}
+
+message DeleteResponse {
+  bool existed = 1;
+}
+
+message RangeRequest {
+  bytes start = 1; // inclusive; empty = first key
+  bytes end = 2;   // exclusive; empty = no upper bound
+  int32 limit = 3; // 0 = server default
+}
+
+message KeyValue {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message RangeResponse {
+  repeated KeyValue kvs = 1;
+  bool more = 2; // truncated by limit
+}
+
+service KVD {
+  rpc Get (GetRequest) returns (GetResponse);
+  rpc Put (PutRequest) returns (PutResponse);
+  rpc Delete (DeleteRequest) returns (DeleteResponse);
+  rpc Range (RangeRequest) returns (RangeResponse);
+}
