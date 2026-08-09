@@ -55,6 +55,7 @@ jobs:
         run: |
           v -o /tmp/kv-ex examples/kv
           v -o /tmp/kvd-ex examples/kvd
+          v -o /tmp/registry-ex examples/registry
           v -o /tmp/vclient-ex interop/vclient
           v -o /tmp/vserver-ex interop/vserver
 

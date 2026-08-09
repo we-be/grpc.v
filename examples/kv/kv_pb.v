@@ -54,15 +54,15 @@ pub fn GetRequest.decode(buf []u8) !GetRequest {
 	return m
 }
 
-pub fn (m &GetRequest) json() string {
-	return m.json_value().json_str()
+pub fn (m &GetRequest) json() !string {
+	return m.json_value()!.json_str()
 }
 
 pub fn GetRequest.from_json(s string) !GetRequest {
 	return GetRequest.from_json_value(protobuf.json_parse(s)!)
 }
 
-pub fn (m &GetRequest) json_value() json2.Any {
+pub fn (m &GetRequest) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.key != '' {
 		o['key'] = json2.Any(m.key)
@@ -74,12 +74,11 @@ pub fn GetRequest.from_json_value(a json2.Any) !GetRequest {
 	obj := protobuf.json_object(a)!
 	mut m := GetRequest{}
 	for jk, jv in obj {
-		if jv is json2.Null {
-			continue
-		}
 		match jk {
 			'key' {
-				m.key = protobuf.json_stringv(jv)!
+				if jv !is json2.Null {
+					m.key = protobuf.json_stringv(jv)!
+				}
 			}
 			else {}
 		}
@@ -147,15 +146,15 @@ pub fn GetResponse.decode(buf []u8) !GetResponse {
 	return m
 }
 
-pub fn (m &GetResponse) json() string {
-	return m.json_value().json_str()
+pub fn (m &GetResponse) json() !string {
+	return m.json_value()!.json_str()
 }
 
 pub fn GetResponse.from_json(s string) !GetResponse {
 	return GetResponse.from_json_value(protobuf.json_parse(s)!)
 }
 
-pub fn (m &GetResponse) json_value() json2.Any {
+pub fn (m &GetResponse) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.value.len > 0 {
 		o['value'] = protobuf.json_b64(m.value)
@@ -170,15 +169,16 @@ pub fn GetResponse.from_json_value(a json2.Any) !GetResponse {
 	obj := protobuf.json_object(a)!
 	mut m := GetResponse{}
 	for jk, jv in obj {
-		if jv is json2.Null {
-			continue
-		}
 		match jk {
 			'value' {
-				m.value = protobuf.json_bytesv(jv)!
+				if jv !is json2.Null {
+					m.value = protobuf.json_bytesv(jv)!
+				}
 			}
 			'found' {
-				m.found = protobuf.json_boolv(jv)!
+				if jv !is json2.Null {
+					m.found = protobuf.json_boolv(jv)!
+				}
 			}
 			else {}
 		}
@@ -246,15 +246,15 @@ pub fn PutRequest.decode(buf []u8) !PutRequest {
 	return m
 }
 
-pub fn (m &PutRequest) json() string {
-	return m.json_value().json_str()
+pub fn (m &PutRequest) json() !string {
+	return m.json_value()!.json_str()
 }
 
 pub fn PutRequest.from_json(s string) !PutRequest {
 	return PutRequest.from_json_value(protobuf.json_parse(s)!)
 }
 
-pub fn (m &PutRequest) json_value() json2.Any {
+pub fn (m &PutRequest) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.key != '' {
 		o['key'] = json2.Any(m.key)
@@ -269,15 +269,16 @@ pub fn PutRequest.from_json_value(a json2.Any) !PutRequest {
 	obj := protobuf.json_object(a)!
 	mut m := PutRequest{}
 	for jk, jv in obj {
-		if jv is json2.Null {
-			continue
-		}
 		match jk {
 			'key' {
-				m.key = protobuf.json_stringv(jv)!
+				if jv !is json2.Null {
+					m.key = protobuf.json_stringv(jv)!
+				}
 			}
 			'value' {
-				m.value = protobuf.json_bytesv(jv)!
+				if jv !is json2.Null {
+					m.value = protobuf.json_bytesv(jv)!
+				}
 			}
 			else {}
 		}
@@ -335,15 +336,15 @@ pub fn PutResponse.decode(buf []u8) !PutResponse {
 	return m
 }
 
-pub fn (m &PutResponse) json() string {
-	return m.json_value().json_str()
+pub fn (m &PutResponse) json() !string {
+	return m.json_value()!.json_str()
 }
 
 pub fn PutResponse.from_json(s string) !PutResponse {
 	return PutResponse.from_json_value(protobuf.json_parse(s)!)
 }
 
-pub fn (m &PutResponse) json_value() json2.Any {
+pub fn (m &PutResponse) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.replaced {
 		o['replaced'] = json2.Any(m.replaced)
@@ -355,12 +356,11 @@ pub fn PutResponse.from_json_value(a json2.Any) !PutResponse {
 	obj := protobuf.json_object(a)!
 	mut m := PutResponse{}
 	for jk, jv in obj {
-		if jv is json2.Null {
-			continue
-		}
 		match jk {
 			'replaced' {
-				m.replaced = protobuf.json_boolv(jv)!
+				if jv !is json2.Null {
+					m.replaced = protobuf.json_boolv(jv)!
+				}
 			}
 			else {}
 		}

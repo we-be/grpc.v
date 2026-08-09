@@ -41,7 +41,7 @@ pub fn (mut s KVService) call(path string, codec grpc.Codec, body []u8) !([]u8, 
 			}
 			resp := s.h.get(req)!
 			out := if codec == .json {
-				resp.json().bytes()
+				resp.json()!.bytes()
 			} else {
 				resp.encode()
 			}
@@ -55,7 +55,7 @@ pub fn (mut s KVService) call(path string, codec grpc.Codec, body []u8) !([]u8, 
 			}
 			resp := s.h.put(req)!
 			out := if codec == .json {
-				resp.json().bytes()
+				resp.json()!.bytes()
 			} else {
 				resp.encode()
 			}

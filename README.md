@@ -95,6 +95,19 @@ git clone https://github.com/vlang/leveldb ~/.vmodules/leveldb
 v run examples/kvd    # then POST to localhost:8181/kvd.KVD/Put …
 ```
 
+## registry — a feature tour
+
+[examples/registry](examples/registry) is a smaller Connect service that
+leans on protobuf.v's richer schema features in one place: a
+consul/etcd-flavored tree of nodes where each node carries labels
+(`map<string,string>`), a `google.protobuf.Timestamp` and
+`google.protobuf.Duration`, an opaque `google.protobuf.Any` payload, a
+health status (an `allow_alias` enum), its `children` (recursion) and the
+`leader` among them (singular recursion, generated as `?&Node`). The
+handler, client, and both codecs are all generated; `registry_test.v`
+roundtrips it on the wire and in protojson and drives it through the
+generated dispatch.
+
 ## What's proven, and how
 
 CI runs three live interop suites against reference implementations on

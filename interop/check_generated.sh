@@ -34,12 +34,14 @@ check() { # check <proto> <dir> <basename>
 
 check examples/kv/kv.proto examples/kv kv
 check examples/kvd/kvd.proto examples/kvd kvd
+check examples/registry/registry.proto examples/registry registry
 
 if [ "$stale" -ne 0 ]; then
   echo
   echo "regenerate with:"
   echo "  v run \$VPBGEN -m main -json -o examples/kv/kv_pb.v -grpc examples/kv/kv_grpc.v examples/kv/kv.proto"
   echo "  v run \$VPBGEN -m main -json -o examples/kvd/kvd_pb.v -grpc examples/kvd/kvd_grpc.v examples/kvd/kvd.proto"
+  echo "  v run \$VPBGEN -m main -json -o examples/registry/registry_pb.v -grpc examples/registry/registry_grpc.v examples/registry/registry.proto"
   exit 1
 fi
 echo "generated code up to date"
