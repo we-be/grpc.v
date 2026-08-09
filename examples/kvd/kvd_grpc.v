@@ -8,24 +8,36 @@ pub mut:
 	c grpc.Client
 }
 
-pub fn (mut x KVDClient) get(req GetRequest) !GetResponse {
-	resp := x.c.unary('/kvd.KVD/Get', req.encode())!
-	return GetResponse.decode(resp)!
+pub fn (mut x KVDClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
+	raw := x.c.unary('/kvd.KVD/Get', req.encode(), ...opts)!
+	return grpc.Reply[GetResponse]{
+		msg:      GetResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
-pub fn (mut x KVDClient) put(req PutRequest) !PutResponse {
-	resp := x.c.unary('/kvd.KVD/Put', req.encode())!
-	return PutResponse.decode(resp)!
+pub fn (mut x KVDClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
+	raw := x.c.unary('/kvd.KVD/Put', req.encode(), ...opts)!
+	return grpc.Reply[PutResponse]{
+		msg:      PutResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
-pub fn (mut x KVDClient) delete(req DeleteRequest) !DeleteResponse {
-	resp := x.c.unary('/kvd.KVD/Delete', req.encode())!
-	return DeleteResponse.decode(resp)!
+pub fn (mut x KVDClient) delete(req DeleteRequest, opts ...grpc.CallOption) !grpc.Reply[DeleteResponse] {
+	raw := x.c.unary('/kvd.KVD/Delete', req.encode(), ...opts)!
+	return grpc.Reply[DeleteResponse]{
+		msg:      DeleteResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
-pub fn (mut x KVDClient) range(req RangeRequest) !RangeResponse {
-	resp := x.c.unary('/kvd.KVD/Range', req.encode())!
-	return RangeResponse.decode(resp)!
+pub fn (mut x KVDClient) range(req RangeRequest, opts ...grpc.CallOption) !grpc.Reply[RangeResponse] {
+	raw := x.c.unary('/kvd.KVD/Range', req.encode(), ...opts)!
+	return grpc.Reply[RangeResponse]{
+		msg:      RangeResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
 pub interface KVDHandler {

@@ -1,6 +1,7 @@
 module grpc
 
 import net.http
+import time
 
 // Client speaks unary gRPC over V's stdlib HTTP client. Real gRPC needs
 // HTTP/2, which net.http negotiates via ALPN on https URLs only — plain
@@ -8,26 +9,82 @@ import net.http
 pub struct Client {
 pub mut:
 	base_url string            // scheme://host[:port], no trailing slash
-	metadata map[string]string // extra headers sent with every call
+	metadata map[string]string // default headers merged into every call
 }
 
-// unary sends one framed request to path ('/pkg.Service/Method') and
-// returns the response message bytes. Non-OK outcomes surface as
-// StatusError.
-pub fn (mut c Client) unary(path string, msg []u8) ![]u8 {
+// unary sends one framed request to path ('/pkg.Service/Method') and returns
+// the response payload plus response metadata. Client.metadata forms the
+// defaults; CallOptions layer on top (deadline, per-call metadata). Non-OK
+// outcomes — including a fired deadline — surface as StatusError.
+pub fn (mut c Client) unary(path string, msg []u8, opts ...CallOption) !RawReply {
+	mut cfg := CallConfig{
+		metadata: c.metadata.clone()
+	}
+	for o in opts {
+		o(mut cfg)
+	}
 	mut h := http.new_header()
 	h.add(.content_type, 'application/grpc+proto')
 	h.add_custom('te', 'trailers')!
-	for k, v in c.metadata {
+	if cfg.timeout > 0 {
+		h.add_custom('grpc-timeout', encode_grpc_timeout(cfg.timeout))!
+	}
+	for k, v in cfg.metadata {
 		h.add_custom(k, v)!
 	}
-	resp := http.fetch(
+	mut fc := http.FetchConfig{
 		url:    c.base_url + path
 		method: .post
 		header: h
 		data:   encode_frame(msg, false).bytestr()
-	)!
-	return parse_unary_response(resp.status_code, resp.header, resp.body.bytes())
+	}
+	if cfg.timeout > 0 {
+		// enforce the deadline client-side too, not just as a server hint
+		fc.read_timeout = cfg.timeout
+		fc.write_timeout = cfg.timeout
+	}
+	start := time.now()
+	resp := http.fetch(fc) or {
+		// attribute the failure to the deadline only if the deadline actually
+		// elapsed — robust regardless of how the transport words the error
+		deadline_hit := cfg.timeout > 0 && time.since(start) >= cfg.timeout
+		return transport_error(err, deadline_hit)
+	}
+	payload := parse_unary_response(resp.status_code, resp.header, resp.body.bytes())!
+	return RawReply{
+		payload:  payload
+		metadata: response_metadata(resp.header)
+	}
+}
+
+// transport_error maps a failed fetch to a gRPC status: a fired deadline to
+// deadline_exceeded, any other transport failure (refused, reset, DNS) to
+// unavailable — the gRPC convention.
+fn transport_error(err IError, deadline_hit bool) StatusError {
+	code := if deadline_hit { Code.deadline_exceeded } else { Code.unavailable }
+	return StatusError{
+		status: Status{
+			code:    code
+			message: err.msg()
+		}
+	}
+}
+
+// response_metadata collects response headers/trailers, minus the gRPC control
+// headers the client consumes itself, so callers see only application metadata.
+fn response_metadata(h http.Header) map[string]string {
+	skip := ['grpc-status', 'grpc-message', 'content-type', 'te']
+	mut m := map[string]string{}
+	for k in h.keys() {
+		if k.to_lower() in skip {
+			continue
+		}
+		vals := h.custom_values(k, exact: false)
+		if vals.len > 0 {
+			m[k] = vals.join(',')
+		}
+	}
+	return m
 }
 
 // split from unary so the response contract is testable without a server;

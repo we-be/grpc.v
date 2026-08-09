@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	pb "example.com/kvserver/kv"
@@ -24,10 +26,21 @@ type server struct {
 	store map[string][]byte
 }
 
-func (s *server) Get(_ context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+	// echo a request-metadata value back as response metadata, so the V
+	// client can prove metadata flows both directions
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if vals := md.Get("x-echo"); len(vals) > 0 {
+			grpc.SetHeader(ctx, metadata.Pairs("x-echoed", vals[0]))
+		}
+	}
 	if req.Key == "boom" {
 		// unicode message exercises percent-encoding on the wire
 		return nil, status.Error(codes.InvalidArgument, "bad key: 🚀 boom")
+	}
+	if req.Key == "slow" {
+		// sleep past any sane client deadline so the client's timeout fires
+		time.Sleep(2 * time.Second)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

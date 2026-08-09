@@ -8,14 +8,20 @@ pub mut:
 	c grpc.Client
 }
 
-pub fn (mut x KVClient) get(req GetRequest) !GetResponse {
-	resp := x.c.unary('/kv.KV/Get', req.encode())!
-	return GetResponse.decode(resp)!
+pub fn (mut x KVClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
+	raw := x.c.unary('/kv.KV/Get', req.encode(), ...opts)!
+	return grpc.Reply[GetResponse]{
+		msg:      GetResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
-pub fn (mut x KVClient) put(req PutRequest) !PutResponse {
-	resp := x.c.unary('/kv.KV/Put', req.encode())!
-	return PutResponse.decode(resp)!
+pub fn (mut x KVClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
+	raw := x.c.unary('/kv.KV/Put', req.encode(), ...opts)!
+	return grpc.Reply[PutResponse]{
+		msg:      PutResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
 // rpc Scan skipped: server streaming is not supported yet

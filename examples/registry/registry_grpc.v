@@ -8,14 +8,20 @@ pub mut:
 	c grpc.Client
 }
 
-pub fn (mut x RegistryClient) put(req PutRequest) !PutResponse {
-	resp := x.c.unary('/registry.Registry/Put', req.encode())!
-	return PutResponse.decode(resp)!
+pub fn (mut x RegistryClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
+	raw := x.c.unary('/registry.Registry/Put', req.encode(), ...opts)!
+	return grpc.Reply[PutResponse]{
+		msg:      PutResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
-pub fn (mut x RegistryClient) get(req GetRequest) !GetResponse {
-	resp := x.c.unary('/registry.Registry/Get', req.encode())!
-	return GetResponse.decode(resp)!
+pub fn (mut x RegistryClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
+	raw := x.c.unary('/registry.Registry/Get', req.encode(), ...opts)!
+	return grpc.Reply[GetResponse]{
+		msg:      GetResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
 }
 
 pub interface RegistryHandler {
