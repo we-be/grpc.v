@@ -26,8 +26,8 @@ pub fn (mut x RegistryClient) get(req GetRequest, opts ...grpc.CallOption) !grpc
 
 pub interface RegistryHandler {
 mut:
-	put(req PutRequest) !PutResponse
-	get(req GetRequest) !GetResponse
+	put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse
+	get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse
 }
 
 pub struct RegistryService {
@@ -35,7 +35,7 @@ pub mut:
 	h RegistryHandler
 }
 
-pub fn (mut s RegistryService) call(path string, codec grpc.Codec, body []u8) !([]u8, bool) {
+pub fn (mut s RegistryService) call(path string, codec grpc.Codec, body []u8, mut ctx grpc.ServerContext) !([]u8, bool) {
 	match path {
 		'/registry.Registry/Put' {
 			req := if codec == .json {
@@ -43,7 +43,7 @@ pub fn (mut s RegistryService) call(path string, codec grpc.Codec, body []u8) !(
 			} else {
 				PutRequest.decode(body)!
 			}
-			resp := s.h.put(req)!
+			resp := s.h.put(mut ctx, req)!
 			out := if codec == .json {
 				resp.json()!.bytes()
 			} else {
@@ -57,7 +57,7 @@ pub fn (mut s RegistryService) call(path string, codec grpc.Codec, body []u8) !(
 			} else {
 				GetRequest.decode(body)!
 			}
-			resp := s.h.get(req)!
+			resp := s.h.get(mut ctx, req)!
 			out := if codec == .json {
 				resp.json()!.bytes()
 			} else {

@@ -25,7 +25,7 @@ fn count(n Node) int {
 	return c
 }
 
-fn (mut s Store) put(req PutRequest) !PutResponse {
+fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 	root := req.root or {
 		return grpc.StatusError{
 			status: grpc.Status{
@@ -49,7 +49,7 @@ fn (mut s Store) put(req PutRequest) !PutResponse {
 	}
 }
 
-fn (mut s Store) get(req GetRequest) !GetResponse {
+fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
 	if n := s.trees[req.path] {
 		return GetResponse{
 			node:  n

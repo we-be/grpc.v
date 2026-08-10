@@ -18,7 +18,7 @@ mut:
 	db &leveldb.DB
 }
 
-fn (mut s Store) get(req GetRequest) !GetResponse {
+fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
 	if v := s.db.get(req.key, leveldb.ReadOptions{}) {
 		return GetResponse{
 			value: v
@@ -28,7 +28,7 @@ fn (mut s Store) get(req GetRequest) !GetResponse {
 	return GetResponse{}
 }
 
-fn (mut s Store) put(req PutRequest) !PutResponse {
+fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 	if req.key.len == 0 {
 		return grpc.StatusError{
 			status: grpc.Status{
@@ -44,7 +44,7 @@ fn (mut s Store) put(req PutRequest) !PutResponse {
 	}
 }
 
-fn (mut s Store) delete(req DeleteRequest) !DeleteResponse {
+fn (mut s Store) delete(mut ctx grpc.ServerContext, req DeleteRequest) !DeleteResponse {
 	existed := s.db.has(req.key, leveldb.ReadOptions{})
 	if existed {
 		s.db.delete(req.key, leveldb.WriteOptions{})!
@@ -66,7 +66,7 @@ fn lt(a []u8, b []u8) bool {
 	return a.len < b.len
 }
 
-fn (mut s Store) range(req RangeRequest) !RangeResponse {
+fn (mut s Store) range(mut ctx grpc.ServerContext, req RangeRequest) !RangeResponse {
 	mut limit := int(req.limit)
 	if limit <= 0 {
 		limit = default_range_limit

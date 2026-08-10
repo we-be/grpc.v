@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -96,6 +97,24 @@ func run(client kvconnect.KVClient, label string) {
 		die(!gp.Msg.Found, "%s %s not found", label, name)
 		die(!bytes.Equal(gp.Msg.Value, val), "%s %s roundtrip mismatch (%d bytes)", label, name, len(gp.Msg.Value))
 	}
+
+	// response metadata: a request header the server echoes into both a
+	// leading response header and a Trailer--prefixed trailing metadata field
+	echoReq := connect.NewRequest(&pb.GetRequest{Key: key})
+	echoReq.Header().Set("x-echo", "hi-"+label)
+	er, err := client.Get(ctx, echoReq)
+	die(err != nil, "%s echo get: %v", label, err)
+	die(er.Header().Get("x-echo-response") != "hi-"+label, "%s leading metadata: %q", label, er.Header().Get("x-echo-response"))
+	die(er.Trailer().Get("x-echo-trailer") != "hi-"+label, "%s trailing metadata: %q", label, er.Trailer().Get("x-echo-trailer"))
+
+	// a typed error detail round-trips through the Connect error JSON
+	_, err = client.Get(ctx, connect.NewRequest(&pb.GetRequest{Key: "detail"}))
+	die(err == nil, "%s detail should error", label)
+	die(connect.CodeOf(err) != connect.CodeFailedPrecondition, "%s detail code: %v", label, connect.CodeOf(err))
+	var ce *connect.Error
+	die(!errors.As(err, &ce), "%s detail not a connect error: %v", label, err)
+	die(len(ce.Details()) != 1, "%s detail count: %d", label, len(ce.Details()))
+	die(ce.Details()[0].Type() != "test.Detail", "%s detail type: %q", label, ce.Details()[0].Type())
 
 	fmt.Printf("connect %s codec OK\n", label)
 }

@@ -11,12 +11,35 @@ mut:
 	m map[string][]u8
 }
 
-fn (mut s Store) get(req GetRequest) !GetResponse {
+fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
+	// metadata echo: mirror a request header into BOTH a response header
+	// (leading metadata) and a response trailer (trailing metadata), so the
+	// client can prove each survives the Connect round-trip.
+	if echo := ctx.request_headers['x-echo'] {
+		ctx.set_header('x-echo-response', echo)
+		ctx.set_trailer('x-echo-trailer', echo)
+	}
 	if req.key == 'boom' {
 		return grpc.StatusError{
 			status: grpc.Status{
 				code:    .invalid_argument
 				message: 'bad key: 🚀 boom'
+			}
+		}
+	}
+	// `detail` returns an error carrying a typed detail, to prove Connect
+	// error details round-trip.
+	if req.key == 'detail' {
+		return grpc.StatusError{
+			status: grpc.Status{
+				code:    .failed_precondition
+				message: 'needs a detail 🚀'
+				details: [
+					grpc.ErrorDetail{
+						type_name: 'test.Detail'
+						value:     [u8(1), 2, 3, 4]
+					},
+				]
 			}
 		}
 	}
@@ -49,7 +72,7 @@ fn (mut s Store) get(req GetRequest) !GetResponse {
 	return GetResponse{}
 }
 
-fn (mut s Store) put(req PutRequest) !PutResponse {
+fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 	replaced := req.key in s.m
 	s.m[req.key] = req.value
 	return PutResponse{

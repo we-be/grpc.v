@@ -82,10 +82,11 @@ fn test_service_dispatch() {
 	mut svc := RegistryService{
 		h: Store{}
 	}
+	mut ctx := grpc.ServerContext{}
 	put_body := PutRequest{
 		root: sample()
 	}.json()!
-	pres, put_found := svc.call('/registry.Registry/Put', .json, put_body.bytes())!
+	pres, put_found := svc.call('/registry.Registry/Put', .json, put_body.bytes(), mut ctx)!
 	assert put_found
 	pr := PutResponse.from_json(pres.bytestr())!
 	assert pr.nodes == 3 // root + two children
@@ -93,7 +94,7 @@ fn test_service_dispatch() {
 	get_body := GetRequest{
 		path: 'db'
 	}.json()!
-	gres, get_found := svc.call('/registry.Registry/Get', .json, get_body.bytes())!
+	gres, get_found := svc.call('/registry.Registry/Get', .json, get_body.bytes(), mut ctx)!
 	assert get_found
 	gr := GetResponse.from_json(gres.bytestr())!
 	assert gr.found
@@ -101,7 +102,7 @@ fn test_service_dispatch() {
 	assert got.encode() == sample().encode()
 
 	// unknown path is not this service's -> found=false
-	_, other := svc.call('/registry.Registry/Nope', .json, get_body.bytes())!
+	_, other := svc.call('/registry.Registry/Nope', .json, get_body.bytes(), mut ctx)!
 	assert !other
 }
 
@@ -109,10 +110,11 @@ fn test_put_rejects_empty_root() {
 	mut svc := RegistryService{
 		h: Store{}
 	}
+	mut ctx := grpc.ServerContext{}
 	body := PutRequest{
 		root: Node{}
 	}.json()!
-	if _, _ := svc.call('/registry.Registry/Put', .json, body.bytes()) {
+	if _, _ := svc.call('/registry.Registry/Put', .json, body.bytes(), mut ctx) {
 		panic('empty root name should have been rejected')
 	} else {
 		assert err is grpc.StatusError
@@ -125,8 +127,9 @@ fn test_dispatch_survives_malformed_bodies() {
 	mut svc := RegistryService{
 		h: Store{}
 	}
+	mut ctx := grpc.ServerContext{}
 	// malformed JSON errors cleanly
-	if _, _ := svc.call('/registry.Registry/Put', .json, 'not json{'.bytes()) {
+	if _, _ := svc.call('/registry.Registry/Put', .json, 'not json{'.bytes(), mut ctx) {
 		panic('malformed JSON should error')
 	} else {
 		assert err.msg().len > 0
@@ -145,8 +148,8 @@ fn test_dispatch_survives_malformed_bodies() {
 		for i in 0 .. n {
 			b[i] = u8(next())
 		}
-		svc.call('/registry.Registry/Put', .proto, b) or {}
-		svc.call('/registry.Registry/Get', .proto, b) or {}
-		svc.call('/registry.Registry/Put', .json, b) or {}
+		svc.call('/registry.Registry/Put', .proto, b, mut ctx) or {}
+		svc.call('/registry.Registry/Get', .proto, b, mut ctx) or {}
+		svc.call('/registry.Registry/Put', .json, b, mut ctx) or {}
 	}
 }

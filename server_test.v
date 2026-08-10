@@ -8,11 +8,32 @@ mut:
 	last_codec Codec
 }
 
-fn (mut s FakeService) call(path string, codec Codec, body []u8) !([]u8, bool) {
+fn (mut s FakeService) call(path string, codec Codec, body []u8, mut ctx ServerContext) !([]u8, bool) {
 	s.last_codec = codec
 	match path {
 		'/t.Echo/Do' {
 			return body, true
+		}
+		'/t.Echo/Meta' {
+			// echo a request header into a response header + trailer, so
+			// tests can exercise the ServerContext round-trip without a socket
+			ctx.set_header('x-out', ctx.header('x-in'))
+			ctx.set_trailer('x-tr', ctx.header('x-in'))
+			return body, true
+		}
+		'/t.Echo/Detail' {
+			return StatusError{
+				status: Status{
+					code:    .failed_precondition
+					message: 'needs detail'
+					details: [
+						ErrorDetail{
+							type_name: 'test.Detail'
+							value:     [u8(1), 2, 3]
+						},
+					]
+				}
+			}
 		}
 		'/t.Echo/Boom' {
 			return StatusError{
@@ -203,10 +224,38 @@ fn test_connect_error_code_table() {
 		.unauthenticated:     401
 	}
 	for c in cases {
-		resp := connect_error_response(c, 'x')
+		resp := connect_error_response(c, 'x', ServerContext{})
 		assert resp.status_code == want_status[c], '${c}: got HTTP ${resp.status_code}'
 		// cancelled is the one code whose wire name diverges from the enum (US spelling)
 		name := if c == .cancelled { 'canceled' } else { c.str() }
 		assert resp.body.contains('"code":"${name}"'), '${c}: body ${resp.body}'
 	}
+}
+
+fn test_response_metadata_roundtrip() {
+	mut s := server()
+	mut h := http.new_header()
+	h.add(.content_type, 'application/proto')
+	h.add_custom('x-in', 'hello') or {}
+	resp := s.handle(http.Request{
+		method: .post
+		url:    '/t.Echo/Meta'
+		data:   'body'
+		header: h
+	})
+	assert resp.status_code == 200
+	// leading metadata is a plain response header
+	assert resp.header.get_custom('x-out', exact: true) or { '' } == 'hello'
+	// trailing metadata rides as a Trailer--prefixed response header
+	assert resp.header.get_custom('trailer-x-tr', exact: true) or { '' } == 'hello'
+}
+
+fn test_error_details_serialized() {
+	mut s := server()
+	resp := post(mut s, '/t.Echo/Detail', 'application/proto', '')
+	assert resp.status_code == 412
+	assert resp.body.contains('"code":"failed_precondition"')
+	assert resp.body.contains('"type":"test.Detail"')
+	// base64 of [1, 2, 3] is AQID
+	assert resp.body.contains('"value":"AQID"')
 }

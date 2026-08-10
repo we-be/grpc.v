@@ -29,11 +29,21 @@ pub fn code_from_int(v int) !Code {
 	return unsafe { Code(v) }
 }
 
+// ErrorDetail is a typed error detail (a google.rpc.* message or any proto)
+// carried on the wire as a Connect error `details` entry: type_name is the
+// message's fully-qualified proto name, value its serialized bytes.
+pub struct ErrorDetail {
+pub:
+	type_name string
+	value     []u8
+}
+
 // Status is an RPC outcome: `ok` plus an empty message means success.
 pub struct Status {
 pub:
 	code    Code
 	message string
+	details []ErrorDetail
 }
 
 pub fn (s Status) is_ok() bool {
