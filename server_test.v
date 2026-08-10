@@ -161,3 +161,52 @@ fn test_query_string_stripped_from_path() {
 	assert resp.status_code == 200
 	assert resp.body == 'q'
 }
+
+// pins the full Connect error-code table (connectrpc.com/docs/protocol#error-codes)
+// to both the HTTP status and the wire code name, for every gRPC code — the
+// interop only exercises one, so these guard the other 16 without a socket.
+fn test_connect_error_code_table() {
+	cases := [
+		Code.cancelled,
+		.unknown,
+		.invalid_argument,
+		.deadline_exceeded,
+		.not_found,
+		.already_exists,
+		.permission_denied,
+		.resource_exhausted,
+		.failed_precondition,
+		.aborted,
+		.out_of_range,
+		.unimplemented,
+		.internal,
+		.unavailable,
+		.data_loss,
+		.unauthenticated,
+	]
+	want_status := {
+		Code.cancelled:       499
+		.unknown:             500
+		.invalid_argument:    400
+		.deadline_exceeded:   504
+		.not_found:           404
+		.already_exists:      409
+		.permission_denied:   403
+		.resource_exhausted:  429
+		.failed_precondition: 412
+		.aborted:             409
+		.out_of_range:        400
+		.unimplemented:       501
+		.internal:            500
+		.unavailable:         503
+		.data_loss:           500
+		.unauthenticated:     401
+	}
+	for c in cases {
+		resp := connect_error_response(c, 'x')
+		assert resp.status_code == want_status[c], '${c}: got HTTP ${resp.status_code}'
+		// cancelled is the one code whose wire name diverges from the enum (US spelling)
+		name := if c == .cancelled { 'canceled' } else { c.str() }
+		assert resp.body.contains('"code":"${name}"'), '${c}: body ${resp.body}'
+	}
+}

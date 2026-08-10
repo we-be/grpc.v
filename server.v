@@ -94,15 +94,18 @@ fn connect_code_name(c Code) string {
 }
 
 // HTTP status per the Connect protocol's code table
+// (connectrpc.com/docs/protocol#error-codes). else = 500: ok, unknown,
+// internal, data_loss.
 fn connect_http_status(c Code) int {
 	return match c {
 		.cancelled { 499 }
-		.invalid_argument, .failed_precondition, .out_of_range { 400 }
+		.invalid_argument, .out_of_range { 400 }
 		.unauthenticated { 401 }
 		.permission_denied { 403 }
 		.not_found { 404 }
-		.deadline_exceeded { 408 }
+		.deadline_exceeded { 504 }
 		.already_exists, .aborted { 409 }
+		.failed_precondition { 412 }
 		.resource_exhausted { 429 }
 		.unimplemented { 501 }
 		.unavailable { 503 }
