@@ -24,6 +24,15 @@ upstream ([#4](https://github.com/we-be/grpc.v/issues/4)), the server side
 speaks Connect, which the gRPC ecosystem reaches via connect-go, connect-es,
 browsers, or an Envoy bridge. The client speaks true gRPC today.
 
+## Stability
+
+Pre-1.0 (**0.x**). The **wire behavior** — gRPC framing, the Connect protocol,
+status codes, and error details — is proven against grpc-go, connect-go, and the
+official [Connect conformance suite](interop/conformance), and is not expected to
+change. The **V API** is still converging and may break in any 0.x release; 1.0
+waits for the native gRPC server (gated on upstream V HTTP/2 trailer support).
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## Setup
 
 ```sh

@@ -50,7 +50,7 @@ fn main() {
 	echoed := client.get(GetRequest{ key: 'k1' }, grpc.header('x-echo', 'ping')) or {
 		fail('metadata call: ${err.msg()}')
 	}
-	if echoed.metadata['x-echoed'] != 'ping' {
+	if echoed.metadata['x-echoed'] != ['ping'] {
 		fail('request metadata not echoed as response metadata: ${echoed.metadata}')
 	}
 

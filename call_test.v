@@ -16,25 +16,26 @@ fn test_encode_grpc_timeout_picks_finest_fitting_unit() {
 fn test_call_options_compose_over_config() {
 	mut cfg := CallConfig{}
 	for o in [timeout(3 * time.second), header('a', '1'), metadata({
-		'b': '2'
-		'c': '3'
+		'b': ['2']
+		'c': ['3']
 	})] {
 		o(mut cfg)
 	}
 	assert cfg.timeout == 3 * time.second
 	assert cfg.metadata == {
-		'a': '1'
-		'b': '2'
-		'c': '3'
+		'a': ['1']
+		'b': ['2']
+		'c': ['3']
 	}
 }
 
-fn test_later_option_wins() {
+fn test_repeated_header_accumulates() {
 	mut cfg := CallConfig{}
 	for o in [header('k', 'first'), header('k', 'second')] {
 		o(mut cfg)
 	}
-	assert cfg.metadata['k'] == 'second'
+	// header() appends, so a repeated key keeps every value (multi-valued metadata)
+	assert cfg.metadata['k'] == ['first', 'second']
 }
 
 fn test_response_metadata_drops_control_headers() {
@@ -52,8 +53,8 @@ fn test_response_metadata_drops_control_headers() {
 	assert 'grpc-status' !in m
 	assert 'grpc-message' !in m
 	assert 'content-type' !in m
-	assert m['x-ratelimit'] == '42'
-	assert m['x-trace-id'] == 'abc'
+	assert m['x-ratelimit'] == ['42']
+	assert m['x-trace-id'] == ['abc']
 }
 
 fn test_transport_error_maps_deadline_vs_unavailable() {

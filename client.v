@@ -8,8 +8,8 @@ import time
 // http targets fall back to HTTP/1.1 and conforming servers refuse them.
 pub struct Client {
 pub mut:
-	base_url string            // scheme://host[:port], no trailing slash
-	metadata map[string]string // default headers merged into every call
+	base_url string              // scheme://host[:port], no trailing slash
+	metadata map[string][]string // default headers merged into every call
 }
 
 // unary sends one framed request to path ('/pkg.Service/Method') and returns
@@ -29,8 +29,10 @@ pub fn (mut c Client) unary(path string, msg []u8, opts ...CallOption) !RawReply
 	if cfg.timeout > 0 {
 		h.add_custom('grpc-timeout', encode_grpc_timeout(cfg.timeout))!
 	}
-	for k, v in cfg.metadata {
-		h.add_custom(k, v)!
+	for k, vals in cfg.metadata {
+		for v in vals {
+			h.add_custom(k, v)!
+		}
 	}
 	mut fc := http.FetchConfig{
 		url:    c.base_url + path
@@ -72,16 +74,16 @@ fn transport_error(err IError, deadline_hit bool) StatusError {
 
 // response_metadata collects response headers/trailers, minus the gRPC control
 // headers the client consumes itself, so callers see only application metadata.
-fn response_metadata(h http.Header) map[string]string {
+fn response_metadata(h http.Header) map[string][]string {
 	skip := ['grpc-status', 'grpc-message', 'content-type', 'te']
-	mut m := map[string]string{}
+	mut m := map[string][]string{}
 	for k in h.keys() {
 		if k.to_lower() in skip {
 			continue
 		}
 		vals := h.custom_values(k, exact: false)
 		if vals.len > 0 {
-			m[k] = vals.join(',')
+			m[k] = vals
 		}
 	}
 	return m
