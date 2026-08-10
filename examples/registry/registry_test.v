@@ -118,3 +118,35 @@ fn test_put_rejects_empty_root() {
 		assert err is grpc.StatusError
 	}
 }
+
+// a real generated dispatch (recursive Node schema included) must survive
+// hostile bodies with a clean error, never a panic or hang
+fn test_dispatch_survives_malformed_bodies() {
+	mut svc := RegistryService{
+		h: Store{}
+	}
+	// malformed JSON errors cleanly
+	if _, _ := svc.call('/registry.Registry/Put', .json, 'not json{'.bytes()) {
+		panic('malformed JSON should error')
+	} else {
+		assert err.msg().len > 0
+	}
+	// fuzz random proto + json bodies; the only contract is: no panic
+	mut seed := u64(0x9E3779B97F4A7C15)
+	next := fn [mut seed] () u64 {
+		seed ^= seed << 13
+		seed ^= seed >> 7
+		seed ^= seed << 17
+		return seed
+	}
+	for _ in 0 .. 8000 {
+		n := int(next() % 32)
+		mut b := []u8{len: n}
+		for i in 0 .. n {
+			b[i] = u8(next())
+		}
+		svc.call('/registry.Registry/Put', .proto, b) or {}
+		svc.call('/registry.Registry/Get', .proto, b) or {}
+		svc.call('/registry.Registry/Put', .json, b) or {}
+	}
+}

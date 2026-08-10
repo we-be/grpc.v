@@ -29,6 +29,10 @@ fn (mut s FakeService) call(path string, codec Codec, body []u8) !([]u8, bool) {
 				}
 			}
 		}
+		'/t.Echo/Fail' {
+			// a plain (non-StatusError) failure, e.g. a body that failed to decode
+			return error('handler blew up')
+		}
 		else {
 			return []u8{}, false
 		}
@@ -120,4 +124,40 @@ fn test_compression_refused() {
 	})
 	assert resp.status_code == 501
 	assert resp.body.contains('compression')
+}
+
+fn test_non_status_error_becomes_internal() {
+	mut s := server()
+	resp := post(mut s, '/t.Echo/Fail', 'application/proto', '')
+	assert resp.status_code == 500
+	assert resp.body.contains('"code":"internal"')
+	assert resp.body.contains('handler blew up')
+}
+
+fn test_missing_content_type_rejected() {
+	mut s := server()
+	resp := post(mut s, '/t.Echo/Do', '', 'x')
+	assert resp.status_code == 415
+}
+
+fn test_identity_encoding_allowed() {
+	mut s := server()
+	mut h := http.new_header()
+	h.add(.content_type, 'application/proto')
+	h.add(.content_encoding, 'identity')
+	resp := s.handle(http.Request{
+		method: .post
+		url:    '/t.Echo/Do'
+		data:   'ok'
+		header: h
+	})
+	assert resp.status_code == 200
+	assert resp.body == 'ok'
+}
+
+fn test_query_string_stripped_from_path() {
+	mut s := server()
+	resp := post(mut s, '/t.Echo/Do?trace=1', 'application/proto', 'q')
+	assert resp.status_code == 200
+	assert resp.body == 'q'
 }
