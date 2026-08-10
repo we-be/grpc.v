@@ -16,10 +16,12 @@ the wire format, framing, status codes, and JSON are all handled.
 - **Typed errors** - `StatusError` carrying a gRPC/Connect code and a
   percent-decoded message
 
-The catch, stated up front: a *native gRPC server* isn't possible yet  - 
-V's stdlib can't send HTTP/2 trailers or speak cleartext h2, both of which
-gRPC servers need. Until that lands upstream, the server side speaks
-Connect, which the gRPC ecosystem reaches via connect-go, connect-es,
+V's stdlib *does* have an HTTP/2 server now, but
+its public `Handler`/`Response` API can't yet **send** response trailers —
+where a successful gRPC response must carry `grpc-status`. That one gap (not a
+missing h2 stack) is why a *native gRPC server* isn't here yet; until it lands
+upstream ([#4](https://github.com/we-be/grpc.v/issues/4)), the server side
+speaks Connect, which the gRPC ecosystem reaches via connect-go, connect-es,
 browsers, or an Envoy bridge. The client speaks true gRPC today.
 
 ## Setup
@@ -126,12 +128,15 @@ Generated `*_pb.v`/`*_grpc.v` are checked into the repo and
 
 ## Transport detail
 
-V's stdlib gained HTTP/2 (client and server) in June 2026. The client side
-negotiates h2 via ALPN over TLS and surfaces response trailers - where
-`grpc-status` lives - into `resp.header` when the stream ends, which is
-what makes real gRPC reachable. The server side is Connect-only because
-`http.Response` cannot emit trailers and there's no h2c listener; both are
-tracked upstream and are the gate to a native gRPC server with streaming.
+V's stdlib gained HTTP/2 — client and server — in mid-2026, and the server is
+RFC 9113 conformant (146/146 h2spec). The client negotiates h2 via ALPN over
+TLS and surfaces response trailers — where `grpc-status` lives — into
+`resp.header` when the stream ends, which is what makes real gRPC reachable.
+The server is Connect-only for one precise reason: its public `Handler`/
+`Response` API has no way to **send** response trailers (the frame machinery
+exists and receives them, but there's no `Response.trailers` / `ResponseWriter`,
+and no h2c listener). That single gap is the gate to a native gRPC server —
+and streaming — tracked in [#4](https://github.com/we-be/grpc.v/issues/4).
 
 ## Development
 
