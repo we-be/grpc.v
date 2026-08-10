@@ -39,7 +39,7 @@ var wantHTTP = map[connect.Code]int{
 	connect.CodeAlreadyExists:      409,
 	connect.CodePermissionDenied:   403,
 	connect.CodeResourceExhausted:  429,
-	connect.CodeFailedPrecondition: 412,
+	connect.CodeFailedPrecondition: 400,
 	connect.CodeAborted:            409,
 	connect.CodeOutOfRange:         400,
 	connect.CodeUnimplemented:      501,

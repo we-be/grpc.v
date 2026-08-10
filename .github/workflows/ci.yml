@@ -68,5 +68,8 @@ jobs:
       - name: Connect interop (connect-go vs V server)
         run: ./interop/connect_run.sh
 
+      - name: Connect conformance (official suite)
+        run: ./interop/conformance/run.sh
+
       - name: kvd smoke
         run: ./examples/kvd/smoke.sh

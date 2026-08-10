@@ -1,0 +1,6 @@
+// Entry point: imports the two conformance protos the harness needs so vpbgen
+// emits one self-contained module (service + server_compat + config + Any).
+syntax = "proto3";
+package connectrpc.conformance.v1;
+import "connectrpc/conformance/v1/service.proto";
+import "connectrpc/conformance/v1/server_compat.proto";

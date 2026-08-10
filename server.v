@@ -18,19 +18,28 @@ pub enum Codec {
 
 // ServerContext carries per-call metadata between the transport and a handler:
 // request leading metadata in, response leading metadata (headers) and
-// trailing metadata (trailers) out. In the Connect unary protocol, trailers
-// are sent as response headers with a `Trailer-` prefix.
+// trailing metadata (trailers) out. Keys are case-insensitive and may repeat
+// (HTTP metadata is multi-valued), so values are ordered lists. In the Connect
+// unary protocol, trailers are sent as response headers with a `Trailer-`
+// prefix.
 pub struct ServerContext {
 mut:
-	resp_headers  map[string]string
-	resp_trailers map[string]string
+	resp_headers  map[string][]string
+	resp_trailers map[string][]string
 pub:
-	request_headers map[string]string
+	request_headers map[string][]string
 }
 
-// header returns an incoming request metadata value (case-insensitive), or ''.
+// header returns the first incoming value for a metadata key (case-insensitive),
+// or '' — the common single-value case.
 pub fn (c &ServerContext) header(key string) string {
-	return c.request_headers[key.to_lower()] or { '' }
+	vals := c.request_headers[key.to_lower()] or { return '' }
+	return if vals.len > 0 { vals[0] } else { '' }
+}
+
+// headers returns every incoming value for a metadata key, in order.
+pub fn (c &ServerContext) headers(key string) []string {
+	return c.request_headers[key.to_lower()] or { []string{} }
 }
 
 // has_header reports whether the request carried this metadata key.
@@ -38,14 +47,24 @@ pub fn (c &ServerContext) has_header(key string) bool {
 	return key.to_lower() in c.request_headers
 }
 
-// set_header adds leading response metadata.
+// set_header replaces any leading response metadata for key with a single value.
 pub fn (mut c ServerContext) set_header(key string, value string) {
-	c.resp_headers[key.to_lower()] = value
+	c.resp_headers[key.to_lower()] = [value]
 }
 
-// set_trailer adds trailing response metadata.
+// add_header appends a leading response metadata value, keeping any existing.
+pub fn (mut c ServerContext) add_header(key string, value string) {
+	c.resp_headers[key.to_lower()] << value
+}
+
+// set_trailer replaces any trailing response metadata for key with a single value.
 pub fn (mut c ServerContext) set_trailer(key string, value string) {
-	c.resp_trailers[key.to_lower()] = value
+	c.resp_trailers[key.to_lower()] = [value]
+}
+
+// add_trailer appends a trailing response metadata value, keeping any existing.
+pub fn (mut c ServerContext) add_trailer(key string, value string) {
+	c.resp_trailers[key.to_lower()] << value
 }
 
 // Service is implemented by vpbgen's generated <Name>Service dispatch
@@ -118,28 +137,40 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 			return resp
 		}
 	}
-	return connect_error_response(.unimplemented, 'no such procedure: ${path}', ctx)
+	// A routing miss: Connect maps an unrecognized path to HTTP 404, even
+	// though the RPC error code is unimplemented (a handler that itself
+	// returns unimplemented still gets the code's normal 501).
+	mut nf := connect_error(Status{
+		code:    .unimplemented
+		message: 'no such procedure: ${path}'
+	}, ctx)
+	nf.status_code = 404
+	return nf
 }
 
-// request_metadata lowercases every incoming header into a flat map the
-// handler reads as leading request metadata.
-fn request_metadata(h http.Header) map[string]string {
-	mut m := map[string]string{}
+// request_metadata lowercases every incoming header into the handler's request
+// metadata, preserving repeated values in order.
+fn request_metadata(h http.Header) map[string][]string {
+	mut m := map[string][]string{}
 	for k in h.keys() {
-		m[k.to_lower()] = h.get_custom(k, exact: true) or { continue }
+		m[k.to_lower()] = h.custom_values(k, exact: true)
 	}
 	return m
 }
 
 // apply_metadata writes a handler's response metadata onto the wire: leading
 // metadata as plain headers, trailing metadata as `Trailer-`-prefixed headers
-// per the Connect unary protocol.
+// per the Connect unary protocol. Repeated values become repeated headers.
 fn apply_metadata(mut resp http.Response, ctx ServerContext) {
-	for k, v in ctx.resp_headers {
-		resp.header.add_custom(k, v) or {}
+	for k, vals in ctx.resp_headers {
+		for v in vals {
+			resp.header.add_custom(k, v) or {}
+		}
 	}
-	for k, v in ctx.resp_trailers {
-		resp.header.add_custom('trailer-${k}', v) or {}
+	for k, vals in ctx.resp_trailers {
+		for v in vals {
+			resp.header.add_custom('trailer-${k}', v) or {}
+		}
 	}
 }
 
@@ -158,13 +189,12 @@ fn connect_code_name(c Code) string {
 fn connect_http_status(c Code) int {
 	return match c {
 		.cancelled { 499 }
-		.invalid_argument, .out_of_range { 400 }
+		.invalid_argument, .failed_precondition, .out_of_range { 400 }
 		.unauthenticated { 401 }
 		.permission_denied { 403 }
 		.not_found { 404 }
 		.deadline_exceeded { 504 }
 		.already_exists, .aborted { 409 }
-		.failed_precondition { 412 }
 		.resource_exhausted { 429 }
 		.unimplemented { 501 }
 		.unavailable { 503 }
@@ -185,7 +215,9 @@ fn connect_error(status Status, ctx ServerContext) http.Response {
 		for d in status.details {
 			arr << json2.Any({
 				'type':  json2.Any(d.type_name)
-				'value': json2.Any(base64.encode(d.value))
+				// Connect error detail values are UNPADDED base64 (the spec's
+				// reference uses RawStdEncoding); strip the `=` padding.
+				'value': json2.Any(base64.encode(d.value).trim_right('='))
 			})
 		}
 		obj['details'] = json2.Any(arr)

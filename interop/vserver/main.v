@@ -15,7 +15,8 @@ fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
 	// metadata echo: mirror a request header into BOTH a response header
 	// (leading metadata) and a response trailer (trailing metadata), so the
 	// client can prove each survives the Connect round-trip.
-	if echo := ctx.request_headers['x-echo'] {
+	echo := ctx.header('x-echo')
+	if echo != '' {
 		ctx.set_header('x-echo-response', echo)
 		ctx.set_trailer('x-echo-trailer', echo)
 	}

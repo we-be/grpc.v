@@ -1,0 +1,19 @@
+# The slice of the official Connect conformance suite grpc.v's ConnectServer
+# targets for 1.0: Connect protocol, HTTP/1.1, unary only, no TLS, no
+# compression. Streaming, gRPC/gRPC-Web, h2c, TLS, and Connect GET are
+# out of scope until the native gRPC server lands.
+features:
+  versions:
+    - HTTP_VERSION_1
+  protocols:
+    - PROTOCOL_CONNECT
+  codecs:
+    - CODEC_PROTO
+    - CODEC_JSON
+  compressions:
+    - COMPRESSION_IDENTITY
+  streamTypes:
+    - STREAM_TYPE_UNARY
+  supportsH2c: false
+  supportsTls: false
+  supportsConnectGet: false

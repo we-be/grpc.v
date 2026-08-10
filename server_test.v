@@ -113,7 +113,8 @@ fn test_canceled_spelling_and_499() {
 fn test_unknown_procedure() {
 	mut s := server()
 	resp := post(mut s, '/t.Other/Nope', 'application/proto', '')
-	assert resp.status_code == 501
+	// Connect maps a routing miss to HTTP 404 with the unimplemented code
+	assert resp.status_code == 404
 	assert resp.body.contains('unimplemented')
 }
 
@@ -214,7 +215,7 @@ fn test_connect_error_code_table() {
 		.already_exists:      409
 		.permission_denied:   403
 		.resource_exhausted:  429
-		.failed_precondition: 412
+		.failed_precondition: 400
 		.aborted:             409
 		.out_of_range:        400
 		.unimplemented:       501
@@ -253,7 +254,7 @@ fn test_response_metadata_roundtrip() {
 fn test_error_details_serialized() {
 	mut s := server()
 	resp := post(mut s, '/t.Echo/Detail', 'application/proto', '')
-	assert resp.status_code == 412
+	assert resp.status_code == 400
 	assert resp.body.contains('"code":"failed_precondition"')
 	assert resp.body.contains('"type":"test.Detail"')
 	// base64 of [1, 2, 3] is AQID
