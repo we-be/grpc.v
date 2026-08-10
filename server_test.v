@@ -161,3 +161,15 @@ fn test_query_string_stripped_from_path() {
 	assert resp.status_code == 200
 	assert resp.body == 'q'
 }
+
+fn test_grpc_proto_roundtrip() {
+	mut s := server()
+	framed_payload := encode_frame('payload'.bytes(), false).bytestr()
+	resp := post(mut s, '/t.Echo/Do', 'application/grpc+proto', framed_payload)
+	assert resp.status_code == 200
+	assert resp.header.get(.content_type) or { '' } == 'application/grpc+proto'
+	assert (resp.header.get_custom('grpc-status') or { '' }) == '0'
+	frames := decode_frames(resp.body.bytes()) or { panic(err) }
+	assert frames.len == 1
+	assert frames[0].payload.bytestr() == 'payload'
+}

@@ -48,9 +48,10 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 	}
 	path := req.url.all_before('?')
 	ct := req.header.get(.content_type) or { '' }
+	is_grpc := ct.starts_with('application/grpc')
 	codec := if ct.starts_with('application/json') {
 		Codec.json
-	} else if ct.starts_with('application/proto') {
+	} else if ct.starts_with('application/proto') || is_grpc {
 		Codec.proto
 	} else {
 		return plain_response(415, 'unsupported codec `${ct}`')
@@ -60,7 +61,16 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 			return connect_error_response(.unimplemented, 'compression is not supported')
 		}
 	}
-	body := req.data.bytes()
+	raw_body := req.data.bytes()
+	body := if is_grpc && raw_body.len >= frame_header_len {
+		if frame, _ := decode_frame(raw_body) {
+			frame.payload
+		} else {
+			raw_body
+		}
+	} else {
+		raw_body
+	}
 	for mut svc in s.services {
 		res, found := svc.call(path, codec, body) or {
 			if err is StatusError {
@@ -69,15 +79,25 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 			return connect_error_response(.internal, err.msg())
 		}
 		if found {
-			out_ct := if codec == .json { 'application/json' } else { 'application/proto' }
+			out_payload := if is_grpc { encode_frame(res, false) } else { res }
+			out_ct := if is_grpc {
+				'application/grpc+proto'
+			} else if codec == .json {
+				'application/json'
+			} else {
+				'application/proto'
+			}
 			mut resp := http.Response{
 				http_version: '1.1'
 				status_code:  200
 				status_msg:   'OK'
-				body:         res.bytestr()
+				body:         out_payload.bytestr()
 			}
 			resp.header.add(.content_type, out_ct)
-			resp.header.add(.content_length, res.len.str())
+			resp.header.add(.content_length, out_payload.len.str())
+			if is_grpc {
+				resp.header.add_custom('grpc-status', '0') or {}
+			}
 			return resp
 		}
 	}
