@@ -4,19 +4,19 @@
 
 gRPC and [Connect](https://connectrpc.com) for V, built on
 [protobuf.v](https://github.com/we-be/protobuf.v). Write a `.proto`, and
-`vpbgen` generates a typed client and a server you plug a handler into —
+`vpbgen` generates a typed client and a server you plug a handler into  - 
 the wire format, framing, status codes, and JSON are all handled.
 
-- **gRPC client** — real gRPC over HTTP/2 (ALPN + TLS + trailers), proven
+- **gRPC client** - real gRPC over HTTP/2 (ALPN + TLS + trailers), proven
   against a live [grpc-go](https://github.com/grpc/grpc-go) server
-- **Connect server** — unary RPC over HTTP/1.1 in the proto *and* JSON
+- **Connect server** - unary RPC over HTTP/1.1 in the proto *and* JSON
   codecs, proven against live [connect-go](https://connectrpc.com) clients
-- **Generated glue** — `<Service>Client`, a `<Service>Handler` interface,
+- **Generated glue** - `<Service>Client`, a `<Service>Handler` interface,
   and dispatch, from `vpbgen -grpc`
-- **Typed errors** — `StatusError` carrying a gRPC/Connect code and a
+- **Typed errors** - `StatusError` carrying a gRPC/Connect code and a
   percent-decoded message
 
-The catch, stated up front: a *native gRPC server* isn't possible yet —
+The catch, stated up front: a *native gRPC server* isn't possible yet  - 
 V's stdlib can't send HTTP/2 trailers or speak cleartext h2, both of which
 gRPC servers need. Until that lands upstream, the server side speaks
 Connect, which the gRPC ecosystem reaches via connect-go, connect-es,
@@ -53,7 +53,7 @@ reply := client.say(Msg{ text: 'hello' })!
 println(reply.text)
 ```
 
-A non-OK RPC returns a `grpc.StatusError` — `match err { grpc.StatusError { err.status.code } … }`.
+A non-OK RPC returns a `grpc.StatusError` - `match err { grpc.StatusError { err.status.code } … }`.
 
 ## Server
 
@@ -82,20 +82,20 @@ curl -X POST localhost:8080/echo.Echo/Say \
   -H 'content-type: application/json' -d '{"text":"hi"}'
 ```
 
-## kvd — the dogfood
+## kvd - the dogfood
 
 [examples/kvd](examples/kvd) is an etcd-lite:
 [vlang/leveldb](https://github.com/vlang/leveldb) storage behind a Connect
 API (Get/Put/Delete/Range), everything between generated. `smoke.sh`
 drives it with curl over the JSON codec and restarts mid-run to prove the
-data survives on disk — the first networked KV service in the V ecosystem.
+data survives on disk - the first networked KV service in the V ecosystem.
 
 ```sh
 git clone https://github.com/vlang/leveldb ~/.vmodules/leveldb
 v run examples/kvd    # then POST to localhost:8181/kvd.KVD/Put …
 ```
 
-## registry — a feature tour
+## registry - a feature tour
 
 [examples/registry](examples/registry) is a smaller Connect service that
 leans on protobuf.v's richer schema features in one place: a
@@ -111,14 +111,14 @@ generated dispatch.
 ## What's proven, and how
 
 CI runs three live interop suites against reference implementations on
-every push — this is the credibility argument for a from-scratch gRPC
+every push - this is the credibility argument for a from-scratch gRPC
 stack:
 
 | suite | what it proves |
 |---|---|
-| [`interop/run.sh`](interop) | the V client vs a real grpc-go server over TLS/HTTP-2 — roundtrips, byte payloads, and error statuses with percent-encoded unicode messages |
+| [`interop/run.sh`](interop) | the V client vs a real grpc-go server over TLS/HTTP-2 - roundtrips, byte payloads, and error statuses with percent-encoded unicode messages |
 | [`interop/connect_run.sh`](interop) | connect-go clients vs the V `ConnectServer`, both proto and JSON codecs |
-| [`examples/kvd/smoke.sh`](examples/kvd) | the full stack — curl → Connect → leveldb → disk, across a restart |
+| [`examples/kvd/smoke.sh`](examples/kvd) | the full stack - curl → Connect → leveldb → disk, across a restart |
 
 Generated `*_pb.v`/`*_grpc.v` are checked into the repo and
 [`interop/check_generated.sh`](interop) fails CI if they drift from what
@@ -127,8 +127,8 @@ Generated `*_pb.v`/`*_grpc.v` are checked into the repo and
 ## Transport detail
 
 V's stdlib gained HTTP/2 (client and server) in June 2026. The client side
-negotiates h2 via ALPN over TLS and surfaces response trailers — where
-`grpc-status` lives — into `resp.header` when the stream ends, which is
+negotiates h2 via ALPN over TLS and surfaces response trailers - where
+`grpc-status` lives - into `resp.header` when the stream ends, which is
 what makes real gRPC reachable. The server side is Connect-only because
 `http.Response` cannot emit trailers and there's no h2c listener; both are
 tracked upstream and are the gate to a native gRPC server with streaming.
