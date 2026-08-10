@@ -26,7 +26,9 @@ only Connect.
   response headers, so this works on V's HTTP/1.1 server today.
 - **Official Connect conformance** wired into CI (`interop/conformance/`):
   Connect / unary / both codecs, 85/88 passing with the gaps enumerated in
-  `known_failing.txt`.
+  `known_failing.txt`. Runs on Linux; macos/arm64 is deferred pending an
+  upstream V fix (`http.Server` corrupts request bytes under its request loop
+  on arm64 — reproduced and isolated to the V stdlib, not grpc.v/json2).
 - Frame-decoder fuzzing and adversarial server tests.
 
 ### Changed
