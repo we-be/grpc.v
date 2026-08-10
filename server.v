@@ -31,20 +31,11 @@ pub:
 }
 
 // header returns the first incoming value for a metadata key (case-insensitive),
-// or '' — the common single-value case.
+// or '' — the common single-value case. For the rare repeated key, read the
+// public `request_headers` map directly.
 pub fn (c &ServerContext) header(key string) string {
 	vals := c.request_headers[key.to_lower()] or { return '' }
 	return if vals.len > 0 { vals[0] } else { '' }
-}
-
-// headers returns every incoming value for a metadata key, in order.
-pub fn (c &ServerContext) headers(key string) []string {
-	return c.request_headers[key.to_lower()] or { []string{} }
-}
-
-// has_header reports whether the request carried this metadata key.
-pub fn (c &ServerContext) has_header(key string) bool {
-	return key.to_lower() in c.request_headers
 }
 
 // set_header replaces any leading response metadata for key with a single value.
