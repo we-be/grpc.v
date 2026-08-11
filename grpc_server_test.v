@@ -2,18 +2,22 @@ module grpc
 
 import net.http
 
-// A hand-rolled Service so the server can be driven without generated stubs:
-// /echo.Echo/Ok echoes the request payload and stamps leading + trailing
-// metadata; /echo.Echo/Boom fails with a unicode message; anything else is a
-// routing miss.
+// A hand-rolled GrpcService so the server can be driven without generated
+// stubs: /echo.Echo/Ok echoes every request message back and stamps leading +
+// trailing metadata; /echo.Echo/Fan turns one request into three responses
+// (server-streaming shape); /echo.Echo/Boom fails with a unicode message;
+// anything else is a routing miss.
 struct EchoSvc {}
 
-fn (mut e EchoSvc) call(path string, codec Codec, body []u8, mut ctx ServerContext) !([]u8, bool) {
+fn (mut e EchoSvc) grpc_call(path string, reqs [][]u8, mut ctx ServerContext) !([][]u8, bool) {
 	match path {
 		'/echo.Echo/Ok' {
 			ctx.set_header('x-lead', 'L')
 			ctx.set_trailer('x-trail', 'T')
-			return body, true
+			return reqs, true
+		}
+		'/echo.Echo/Fan' {
+			return [reqs[0], reqs[0], reqs[0]], true
 		}
 		'/echo.Echo/Boom' {
 			return StatusError{
@@ -24,20 +28,28 @@ fn (mut e EchoSvc) call(path string, codec Codec, body []u8, mut ctx ServerConte
 			}
 		}
 		else {
-			return []u8{}, false
+			return [][]u8{}, false
 		}
 	}
 }
 
-fn grpc_request(path string, payload []u8) http.Request {
+fn grpc_request_multi(path string, payloads [][]u8) http.Request {
 	mut h := http.new_header()
 	h.add(.content_type, 'application/grpc+proto')
+	mut body := []u8{}
+	for p in payloads {
+		body << encode_frame(p, false)
+	}
 	return http.Request{
 		method: .post
 		url:    path
 		header: h
-		data:   encode_frame(payload, false).bytestr()
+		data:   body.bytestr()
 	}
+}
+
+fn grpc_request(path string, payload []u8) http.Request {
+	return grpc_request_multi(path, [payload])
 }
 
 fn new_test_server() GrpcServer {
@@ -69,6 +81,31 @@ fn test_grpc_metadata_leading_vs_trailing() {
 	// set_header -> leading response header; set_trailer -> real h2 trailer
 	assert (resp.header.get_custom('x-lead') or { '' }) == 'L'
 	assert (resp.trailers.get_custom('x-trail') or { '' }) == 'T'
+}
+
+fn test_grpc_server_streaming_fans_out_frames() {
+	mut s := new_test_server()
+	msg := 'tick'.bytes()
+	resp := s.handle(grpc_request('/echo.Echo/Fan', msg))
+	assert resp.status_code == 200
+	// one request -> three response frames, then grpc-status: 0
+	frames := decode_frames(resp.body.bytes()) or { panic(err) }
+	assert frames.len == 3
+	for f in frames {
+		assert f.payload == msg
+	}
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '0'
+}
+
+fn test_grpc_client_streaming_reads_every_request_frame() {
+	mut s := new_test_server()
+	payloads := ['a'.bytes(), 'bb'.bytes(), 'ccc'.bytes()]
+	resp := s.handle(grpc_request_multi('/echo.Echo/Ok', payloads))
+	// server saw all three request messages (Ok echoes them straight back)
+	frames := decode_frames(resp.body.bytes()) or { panic(err) }
+	assert frames.len == 3
+	assert frames[0].payload == 'a'.bytes()
+	assert frames[2].payload == 'ccc'.bytes()
 }
 
 fn test_grpc_error_is_trailers_only_with_encoded_message() {

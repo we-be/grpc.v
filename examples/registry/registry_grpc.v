@@ -70,3 +70,37 @@ pub fn (mut s RegistryService) call(path string, codec grpc.Codec, body []u8, mu
 		}
 	}
 }
+
+pub fn (mut s RegistryService) grpc_call(path string, reqs [][]u8, mut ctx grpc.ServerContext) !([][]u8, bool) {
+	match path {
+		'/registry.Registry/Put' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Put expects exactly one request message'
+					}
+				}
+			}
+			req := PutRequest.decode(reqs[0])!
+			resp := s.h.put(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/registry.Registry/Get' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Get expects exactly one request message'
+					}
+				}
+			}
+			req := GetRequest.decode(reqs[0])!
+			resp := s.h.get(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		else {
+			return [][]u8{}, false
+		}
+	}
+}

@@ -24,12 +24,23 @@ pub fn (mut x KVClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply
 	}
 }
 
-// rpc Scan skipped: server streaming is not supported yet
+pub fn (mut x KVClient) scan(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[[]GetResponse] {
+	raw := x.c.server_stream('/kv.KV/Scan', req.encode(), ...opts)!
+	mut msgs := []GetResponse{cap: raw.payloads.len}
+	for p in raw.payloads {
+		msgs << GetResponse.decode(p)!
+	}
+	return grpc.Reply[[]GetResponse]{
+		msg:      msgs
+		metadata: raw.metadata
+	}
+}
 
 pub interface KVHandler {
 mut:
 	get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse
 	put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse
+	scan(mut ctx grpc.ServerContext, req GetRequest) ![]GetResponse
 }
 
 pub struct KVService {
@@ -69,6 +80,57 @@ pub fn (mut s KVService) call(path string, codec grpc.Codec, body []u8, mut ctx 
 		}
 		else {
 			return []u8{}, false
+		}
+	}
+}
+
+pub fn (mut s KVService) grpc_call(path string, reqs [][]u8, mut ctx grpc.ServerContext) !([][]u8, bool) {
+	match path {
+		'/kv.KV/Get' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Get expects exactly one request message'
+					}
+				}
+			}
+			req := GetRequest.decode(reqs[0])!
+			resp := s.h.get(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/kv.KV/Put' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Put expects exactly one request message'
+					}
+				}
+			}
+			req := PutRequest.decode(reqs[0])!
+			resp := s.h.put(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/kv.KV/Scan' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Scan expects exactly one request message'
+					}
+				}
+			}
+			req := GetRequest.decode(reqs[0])!
+			resps := s.h.scan(mut ctx, req)!
+			mut out := [][]u8{cap: resps.len}
+			for r in resps {
+				out << r.encode()
+			}
+			return out, true
+		}
+		else {
+			return [][]u8{}, false
 		}
 	}
 }

@@ -81,6 +81,24 @@ fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 	}
 }
 
+// scan streams back a GetResponse for every stored key that starts with
+// req.key (a prefix scan) — the server-streaming path. Keys are sorted so the
+// grpc-go client sees a deterministic order.
+fn (mut s Store) scan(mut ctx grpc.ServerContext, req GetRequest) ![]GetResponse {
+	mut keys := s.m.keys()
+	keys.sort()
+	mut out := []GetResponse{}
+	for k in keys {
+		if k.starts_with(req.key) {
+			out << GetResponse{
+				value: s.m[k]
+				found: true
+			}
+		}
+	}
+	return out
+}
+
 fn main() {
 	addr := if os.args.len > 1 { os.args[1] } else { ':8181' }
 	// same KVService, two transports: `grpc` serves native gRPC over h2/h2c,

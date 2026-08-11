@@ -116,3 +116,63 @@ pub fn (mut s KVDService) call(path string, codec grpc.Codec, body []u8, mut ctx
 		}
 	}
 }
+
+pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.ServerContext) !([][]u8, bool) {
+	match path {
+		'/kvd.KVD/Get' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Get expects exactly one request message'
+					}
+				}
+			}
+			req := GetRequest.decode(reqs[0])!
+			resp := s.h.get(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/kvd.KVD/Put' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Put expects exactly one request message'
+					}
+				}
+			}
+			req := PutRequest.decode(reqs[0])!
+			resp := s.h.put(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/kvd.KVD/Delete' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Delete expects exactly one request message'
+					}
+				}
+			}
+			req := DeleteRequest.decode(reqs[0])!
+			resp := s.h.delete(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/kvd.KVD/Range' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Range expects exactly one request message'
+					}
+				}
+			}
+			req := RangeRequest.decode(reqs[0])!
+			resp := s.h.range(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		else {
+			return [][]u8{}, false
+		}
+	}
+}

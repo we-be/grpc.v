@@ -78,5 +78,12 @@ jobs:
         if: runner.os == 'Linux'
         run: ./interop/conformance/run.sh
 
+      # native gRPC: a real grpc-go client vs the V GrpcServer over cleartext
+      # h2c (unary + buffered server-streaming). Linux-only, matching the
+      # conformance step, to sidestep the macos/arm64 V codegen issue.
+      - name: gRPC native interop (grpc-go client vs V server)
+        if: runner.os == 'Linux'
+        run: ./interop/grpc_run.sh
+
       - name: kvd smoke
         run: ./examples/kvd/smoke.sh

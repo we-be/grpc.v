@@ -14,17 +14,27 @@ import net.http
 
 const grpc_content_type = 'application/grpc+proto'
 
+// GrpcService is the native-gRPC dispatch a generated <Name>Service satisfies
+// (alongside Service, the Connect one): a list of request message payloads in,
+// a list of response message payloads out — so one call covers unary (one in,
+// one out), server-streaming (one in, many out), and client-streaming (many in,
+// one out). found=false means the path belongs to another mounted service.
+pub interface GrpcService {
+mut:
+	grpc_call(path string, reqs [][]u8, mut ctx ServerContext) !([][]u8, bool)
+}
+
 pub struct GrpcServer {
 pub mut:
 	addr     string
-	services []Service
+	services []GrpcService
 	// TLS termination: set both to serve gRPC over HTTPS (ALPN h2). Left empty,
 	// the server runs cleartext h2c — what insecure gRPC clients use.
 	cert     string
 	cert_key string
 }
 
-pub fn (mut s GrpcServer) mount(svc Service) {
+pub fn (mut s GrpcServer) mount(svc GrpcService) {
 	s.services << svc
 }
 
@@ -56,36 +66,59 @@ pub fn (mut s GrpcServer) handle(req http.Request) http.Response {
 		return grpc_error(Status{ code: .internal, message: 'unexpected content-type `${ct}`' },
 			ctx)
 	}
-	// unary: exactly one length-prefixed request message
-	frame, n := decode_frame(req.data.bytes()) or {
+	// unary + client-streaming both arrive as one or more length-prefixed
+	// request messages in the body
+	reqs := decode_request_frames(req.data.bytes()) or {
+		if err is StatusError {
+			return grpc_error(err.status, ctx)
+		}
 		return grpc_error(Status{ code: .internal, message: err.msg() }, ctx)
 	}
-	if n == 0 {
-		return grpc_error(Status{ code: .internal, message: 'truncated request frame' }, ctx)
-	}
-	if frame.compressed {
-		return grpc_error(Status{ code: .unimplemented, message: 'compressed request not supported' },
-			ctx)
-	}
 	for mut svc in s.services {
-		reply, found := svc.call(path, .proto, frame.payload, mut ctx) or {
+		replies, found := svc.grpc_call(path, reqs, mut ctx) or {
 			if err is StatusError {
 				return grpc_error(err.status, ctx)
 			}
 			return grpc_error(Status{ code: .internal, message: err.msg() }, ctx)
 		}
 		if found {
-			return grpc_ok(reply, ctx)
+			return grpc_ok(replies, ctx)
 		}
 	}
 	return grpc_error(Status{ code: .unimplemented, message: 'no such procedure: ${path}' }, ctx)
 }
 
-// grpc_ok frames the reply and closes the stream with grpc-status: 0.
-fn grpc_ok(reply []u8, ctx ServerContext) http.Response {
+// decode_request_frames splits the request body into its message payloads,
+// rejecting a compressed frame (we don't negotiate compression) as unimplemented
+// and a truncated one as a decode error.
+fn decode_request_frames(body []u8) ![][]u8 {
+	frames := decode_frames(body)!
+	mut msgs := [][]u8{cap: frames.len}
+	for f in frames {
+		if f.compressed {
+			return StatusError{
+				status: Status{
+					code:    .unimplemented
+					message: 'compressed request not supported'
+				}
+			}
+		}
+		msgs << f.payload
+	}
+	return msgs
+}
+
+// grpc_ok frames every reply message into the body and closes the stream with
+// grpc-status: 0 — one message for unary, many for server-streaming, none for
+// an empty stream (which folds to a Trailers-Only success).
+fn grpc_ok(replies [][]u8, ctx ServerContext) http.Response {
+	mut out := []u8{}
+	for r in replies {
+		out << encode_frame(r, false)
+	}
 	mut resp := http.Response{
 		status_code: 200
-		body:        encode_frame(reply, false).bytestr()
+		body:        out.bytestr()
 	}
 	resp.header.add(.content_type, grpc_content_type)
 	apply_leading(mut resp, ctx)

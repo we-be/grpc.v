@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -104,5 +105,31 @@ func main() {
 		fail("echo-trailer", fmt.Errorf("trailing metadata lost: %v", trl))
 	}
 
-	fmt.Println("GRPC-GO -> V GrpcServer INTEROP OK")
+	// server-streaming: put a few prefixed keys, then Scan reads them back as
+	// a real gRPC stream (N framed messages + trailers)
+	for _, k := range []string{"k1", "k2", "k3"} {
+		if _, err := c.Put(ctx, &kv.PutRequest{Key: k, Value: []byte("v-" + k)}); err != nil {
+			fail("scan-setup", err)
+		}
+	}
+	sc, err := c.Scan(ctx, &kv.GetRequest{Key: "k"})
+	if err != nil {
+		fail("scan", err)
+	}
+	var vals []string
+	for {
+		resp, err := sc.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fail("scan-recv", err)
+		}
+		vals = append(vals, string(resp.Value))
+	}
+	if len(vals) != 3 || vals[0] != "v-k1" || vals[2] != "v-k3" {
+		fail("scan-stream", fmt.Errorf("expected [v-k1 v-k2 v-k3], got %v", vals))
+	}
+
+	fmt.Println("GRPC-GO -> V GrpcServer INTEROP OK (unary + server-streaming)")
 }

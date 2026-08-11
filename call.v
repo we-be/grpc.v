@@ -61,6 +61,15 @@ pub:
 	metadata map[string][]string
 }
 
+// RawStreamReply is the untyped result of Client.server_stream: every response
+// message payload (buffered) plus response metadata. Generated server-streaming
+// stubs decode the list into a Reply[[]T].
+pub struct RawStreamReply {
+pub:
+	payloads [][]u8
+	metadata map[string][]string
+}
+
 // encode_grpc_timeout renders a duration as a grpc-timeout value: the finest
 // unit whose integer value fits the spec's 8-digit maximum, so short deadlines
 // keep full precision and long ones still fit.

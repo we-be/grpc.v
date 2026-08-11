@@ -3,9 +3,10 @@ module grpc
 import net.http
 import time
 
-// Client speaks unary gRPC over V's stdlib HTTP client. Real gRPC needs
-// HTTP/2, which net.http negotiates via ALPN on https URLs only — plain
-// http targets fall back to HTTP/1.1 and conforming servers refuse them.
+// Client speaks unary + buffered-streaming gRPC over V's stdlib HTTP client.
+// Real gRPC needs HTTP/2, which net.http negotiates via ALPN on https URLs
+// only — plain http targets fall back to HTTP/1.1 and conforming servers
+// refuse them.
 pub struct Client {
 pub mut:
 	base_url string              // scheme://host[:port], no trailing slash
@@ -13,10 +14,52 @@ pub mut:
 }
 
 // unary sends one framed request to path ('/pkg.Service/Method') and returns
-// the response payload plus response metadata. Client.metadata forms the
+// the single response payload plus response metadata. Client.metadata forms the
 // defaults; CallOptions layer on top (deadline, per-call metadata). Non-OK
 // outcomes — including a fired deadline — surface as StatusError.
 pub fn (mut c Client) unary(path string, msg []u8, opts ...CallOption) !RawReply {
+	status_code, h, body := c.do_call(path, encode_frame(msg, false), ...opts)!
+	payload := parse_unary_response(status_code, h, body)!
+	return RawReply{
+		payload:  payload
+		metadata: response_metadata(h)
+	}
+}
+
+// server_stream sends one request and buffers the whole response stream: every
+// response message the server framed into the body, in order. The transport is
+// a single POST, so this materializes the stream rather than delivering it
+// incrementally.
+pub fn (mut c Client) server_stream(path string, msg []u8, opts ...CallOption) !RawStreamReply {
+	status_code, h, body := c.do_call(path, encode_frame(msg, false), ...opts)!
+	payloads := parse_response(status_code, h, body)!
+	return RawStreamReply{
+		payloads: payloads
+		metadata: response_metadata(h)
+	}
+}
+
+// client_stream sends the whole request stream — every message framed into one
+// body — and returns the single response. The buffered request rides in one
+// POST, so the server's receive-body cap applies to the batch.
+pub fn (mut c Client) client_stream(path string, msgs [][]u8, opts ...CallOption) !RawReply {
+	mut body := []u8{}
+	for m in msgs {
+		body << encode_frame(m, false)
+	}
+	status_code, h, respbody := c.do_call(path, body, ...opts)!
+	payload := parse_unary_response(status_code, h, respbody)!
+	return RawReply{
+		payload:  payload
+		metadata: response_metadata(h)
+	}
+}
+
+// do_call performs the HTTP round-trip shared by every call shape: resolve the
+// config, set the gRPC request headers (content-type, te, grpc-timeout, and
+// metadata), POST the already-framed body, and return the raw response. A fired
+// deadline or any transport failure surfaces as a StatusError.
+fn (mut c Client) do_call(path string, body []u8, opts ...CallOption) !(int, http.Header, []u8) {
 	mut cfg := CallConfig{
 		metadata: c.metadata.clone()
 	}
@@ -38,7 +81,7 @@ pub fn (mut c Client) unary(path string, msg []u8, opts ...CallOption) !RawReply
 		url:    c.base_url + path
 		method: .post
 		header: h
-		data:   encode_frame(msg, false).bytestr()
+		data:   body.bytestr()
 	}
 	if cfg.timeout > 0 {
 		// enforce the deadline client-side too, not just as a server hint
@@ -52,11 +95,7 @@ pub fn (mut c Client) unary(path string, msg []u8, opts ...CallOption) !RawReply
 		deadline_hit := cfg.timeout > 0 && time.since(start) >= cfg.timeout
 		return transport_error(err, deadline_hit)
 	}
-	payload := parse_unary_response(resp.status_code, resp.header, resp.body.bytes())!
-	return RawReply{
-		payload:  payload
-		metadata: response_metadata(resp.header)
-	}
+	return resp.status_code, resp.header, resp.body.bytes()
 }
 
 // transport_error maps a failed fetch to a gRPC status: a fired deadline to
@@ -89,10 +128,12 @@ fn response_metadata(h http.Header) map[string][]string {
 	return m
 }
 
-// split from unary so the response contract is testable without a server;
-// the h2 layer merges response trailers into the header set, so
-// grpc-status is readable here either way
-fn parse_unary_response(status_code int, h http.Header, body []u8) ![]u8 {
+// parse_response is the shared response contract, testable without a server:
+// validate the HTTP status, content-type, and grpc-status (a non-OK status is a
+// StatusError with the percent-decoded grpc-message), then return every
+// response message payload the body carried. The h2 layer merges response
+// trailers into the header set, so grpc-status is readable here either way.
+fn parse_response(status_code int, h http.Header, body []u8) ![][]u8 {
 	if status_code != 200 {
 		return StatusError{
 			status: Status{
@@ -144,23 +185,33 @@ fn parse_unary_response(status_code int, h http.Header, body []u8) ![]u8 {
 		}
 	}
 	frames := decode_frames(body)!
-	if frames.len != 1 {
+	mut payloads := [][]u8{cap: frames.len}
+	for f in frames {
+		if f.compressed {
+			return StatusError{
+				status: Status{
+					code:    .unimplemented
+					message: 'compressed response not supported'
+				}
+			}
+		}
+		payloads << f.payload
+	}
+	return payloads
+}
+
+// parse_unary_response is parse_response constrained to exactly one message.
+fn parse_unary_response(status_code int, h http.Header, body []u8) ![]u8 {
+	payloads := parse_response(status_code, h, body)!
+	if payloads.len != 1 {
 		return StatusError{
 			status: Status{
 				code:    .internal
-				message: 'expected 1 response message, got ${frames.len}'
+				message: 'expected 1 response message, got ${payloads.len}'
 			}
 		}
 	}
-	if frames[0].compressed {
-		return StatusError{
-			status: Status{
-				code:    .unimplemented
-				message: 'compressed response not supported'
-			}
-		}
-	}
-	return frames[0].payload
+	return payloads[0]
 }
 
 // HTTP status to gRPC code, per the gRPC-over-HTTP/2 spec
