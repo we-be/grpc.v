@@ -42,6 +42,27 @@ fn (mut h ConformanceHandler) unimplemented(mut ctx grpc.ServerContext, req Unim
 	}
 }
 
+// server_stream / client_stream exist only to satisfy the generated handler
+// interface. This harness runs Connect / unary only (config.yaml), so the
+// streaming transports are never driven against it.
+fn (mut h ConformanceHandler) server_stream(mut ctx grpc.ServerContext, req ServerStreamRequest) ![]ServerStreamResponse {
+	return grpc.StatusError{
+		status: grpc.Status{
+			code:    .unimplemented
+			message: 'server streaming not exercised by this harness'
+		}
+	}
+}
+
+fn (mut h ConformanceHandler) client_stream(mut ctx grpc.ServerContext, reqs []ClientStreamRequest) !ClientStreamResponse {
+	return grpc.StatusError{
+		status: grpc.Status{
+			code:    .unimplemented
+			message: 'client streaming not exercised by this harness'
+		}
+	}
+}
+
 // apply_and_build sets the response metadata the definition asks for, honors
 // its delay, and builds the RequestInfo echoing what the server observed. On
 // the error arm it returns the requested error (with RequestInfo appended to

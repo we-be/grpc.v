@@ -16,9 +16,31 @@ pub fn (mut x ConformanceServiceClient) unary(req UnaryRequest, opts ...grpc.Cal
 	}
 }
 
-// rpc ServerStream skipped: server streaming is not supported yet
+pub fn (mut x ConformanceServiceClient) server_stream(req ServerStreamRequest, opts ...grpc.CallOption) !grpc.Reply[[]ServerStreamResponse] {
+	raw := x.c.server_stream('/connectrpc.conformance.v1.ConformanceService/ServerStream',
+		req.encode(), ...opts)!
+	mut msgs := []ServerStreamResponse{cap: raw.payloads.len}
+	for p in raw.payloads {
+		msgs << ServerStreamResponse.decode(p)!
+	}
+	return grpc.Reply[[]ServerStreamResponse]{
+		msg:      msgs
+		metadata: raw.metadata
+	}
+}
 
-// rpc ClientStream skipped: client streaming is not supported yet
+pub fn (mut x ConformanceServiceClient) client_stream(reqs []ClientStreamRequest, opts ...grpc.CallOption) !grpc.Reply[ClientStreamResponse] {
+	mut bodies := [][]u8{cap: reqs.len}
+	for r in reqs {
+		bodies << r.encode()
+	}
+	raw := x.c.client_stream('/connectrpc.conformance.v1.ConformanceService/ClientStream', bodies,
+		...opts)!
+	return grpc.Reply[ClientStreamResponse]{
+		msg:      ClientStreamResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
+}
 
 // rpc BidiStream skipped: bidirectional streaming is not supported yet
 
@@ -43,6 +65,8 @@ pub fn (mut x ConformanceServiceClient) idempotent_unary(req IdempotentUnaryRequ
 pub interface ConformanceServiceHandler {
 mut:
 	unary(mut ctx grpc.ServerContext, req UnaryRequest) !UnaryResponse
+	server_stream(mut ctx grpc.ServerContext, req ServerStreamRequest) ![]ServerStreamResponse
+	client_stream(mut ctx grpc.ServerContext, reqs []ClientStreamRequest) !ClientStreamResponse
 	unimplemented(mut ctx grpc.ServerContext, req UnimplementedRequest) !UnimplementedResponse
 	idempotent_unary(mut ctx grpc.ServerContext, req IdempotentUnaryRequest) !IdempotentUnaryResponse
 }
@@ -98,6 +122,78 @@ pub fn (mut s ConformanceServiceService) call(path string, codec grpc.Codec, bod
 		}
 		else {
 			return []u8{}, false
+		}
+	}
+}
+
+pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut ctx grpc.ServerContext) !([][]u8, bool) {
+	match path {
+		'/connectrpc.conformance.v1.ConformanceService/Unary' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Unary expects exactly one request message'
+					}
+				}
+			}
+			req := UnaryRequest.decode(reqs[0])!
+			resp := s.h.unary(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/connectrpc.conformance.v1.ConformanceService/ServerStream' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'ServerStream expects exactly one request message'
+					}
+				}
+			}
+			req := ServerStreamRequest.decode(reqs[0])!
+			resps := s.h.server_stream(mut ctx, req)!
+			mut out := [][]u8{cap: resps.len}
+			for r in resps {
+				out << r.encode()
+			}
+			return out, true
+		}
+		'/connectrpc.conformance.v1.ConformanceService/ClientStream' {
+			mut msgs := []ClientStreamRequest{cap: reqs.len}
+			for b_ in reqs {
+				msgs << ClientStreamRequest.decode(b_)!
+			}
+			resp := s.h.client_stream(mut ctx, msgs)!
+			return [resp.encode()], true
+		}
+		'/connectrpc.conformance.v1.ConformanceService/Unimplemented' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'Unimplemented expects exactly one request message'
+					}
+				}
+			}
+			req := UnimplementedRequest.decode(reqs[0])!
+			resp := s.h.unimplemented(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		'/connectrpc.conformance.v1.ConformanceService/IdempotentUnary' {
+			if reqs.len != 1 {
+				return grpc.StatusError{
+					status: grpc.Status{
+						code:    .invalid_argument
+						message: 'IdempotentUnary expects exactly one request message'
+					}
+				}
+			}
+			req := IdempotentUnaryRequest.decode(reqs[0])!
+			resp := s.h.idempotent_unary(mut ctx, req)!
+			return [resp.encode()], true
+		}
+		else {
+			return [][]u8{}, false
 		}
 	}
 }
