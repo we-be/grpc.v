@@ -83,12 +83,26 @@ fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 
 fn main() {
 	addr := if os.args.len > 1 { os.args[1] } else { ':8181' }
-	mut srv := grpc.ConnectServer{
-		addr: addr
+	// same KVService, two transports: `grpc` serves native gRPC over h2/h2c,
+	// anything else serves Connect over HTTP/1.1
+	mode := if os.args.len > 2 { os.args[2] } else { 'connect' }
+	if mode == 'grpc' {
+		mut srv := grpc.GrpcServer{
+			addr: addr
+		}
+		srv.mount(KVService{
+			h: Store{}
+		})
+		println('READY')
+		srv.listen_and_serve() or { panic(err) }
+	} else {
+		mut srv := grpc.ConnectServer{
+			addr: addr
+		}
+		srv.mount(KVService{
+			h: Store{}
+		})
+		println('READY')
+		srv.listen_and_serve() or { panic(err) }
 	}
-	srv.mount(KVService{
-		h: Store{}
-	})
-	println('READY')
-	srv.listen_and_serve() or { panic(err) }
 }

@@ -1,0 +1,105 @@
+module grpc
+
+import net.http
+
+// A hand-rolled Service so the server can be driven without generated stubs:
+// /echo.Echo/Ok echoes the request payload and stamps leading + trailing
+// metadata; /echo.Echo/Boom fails with a unicode message; anything else is a
+// routing miss.
+struct EchoSvc {}
+
+fn (mut e EchoSvc) call(path string, codec Codec, body []u8, mut ctx ServerContext) !([]u8, bool) {
+	match path {
+		'/echo.Echo/Ok' {
+			ctx.set_header('x-lead', 'L')
+			ctx.set_trailer('x-trail', 'T')
+			return body, true
+		}
+		'/echo.Echo/Boom' {
+			return StatusError{
+				status: Status{
+					code:    .invalid_argument
+					message: 'nope 🚀'
+				}
+			}
+		}
+		else {
+			return []u8{}, false
+		}
+	}
+}
+
+fn grpc_request(path string, payload []u8) http.Request {
+	mut h := http.new_header()
+	h.add(.content_type, 'application/grpc+proto')
+	return http.Request{
+		method: .post
+		url:    path
+		header: h
+		data:   encode_frame(payload, false).bytestr()
+	}
+}
+
+fn new_test_server() GrpcServer {
+	mut s := GrpcServer{}
+	s.mount(EchoSvc{})
+	return s
+}
+
+fn test_grpc_ok_frames_reply_and_sets_status_trailer() {
+	mut s := new_test_server()
+	msg := 'hello world'.bytes()
+	resp := s.handle(grpc_request('/echo.Echo/Ok', msg))
+
+	assert resp.status_code == 200
+	ct := resp.header.get(.content_type) or { '' }
+	assert ct.starts_with('application/grpc')
+	// body is exactly one uncompressed frame carrying the echoed payload
+	frames := decode_frames(resp.body.bytes()) or { panic(err) }
+	assert frames.len == 1
+	assert !frames[0].compressed
+	assert frames[0].payload == msg
+	// grpc-status: 0 rides in the trailers
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '0'
+}
+
+fn test_grpc_metadata_leading_vs_trailing() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request('/echo.Echo/Ok', 'x'.bytes()))
+	// set_header -> leading response header; set_trailer -> real h2 trailer
+	assert (resp.header.get_custom('x-lead') or { '' }) == 'L'
+	assert (resp.trailers.get_custom('x-trail') or { '' }) == 'T'
+}
+
+fn test_grpc_error_is_trailers_only_with_encoded_message() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request('/echo.Echo/Boom', 'x'.bytes()))
+
+	assert resp.status_code == 200 // gRPC failures are still HTTP 200
+	assert resp.body == '' // no body -> Trailers-Only fold
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '3' // invalid_argument
+	// unicode message round-trips through percent-encoding
+	enc := resp.trailers.get_custom('grpc-message') or { '' }
+	assert percent_decode(enc) == 'nope 🚀'
+}
+
+fn test_grpc_unknown_procedure_is_unimplemented() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request('/echo.Echo/Missing', 'x'.bytes()))
+	assert resp.status_code == 200
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '12' // unimplemented
+}
+
+fn test_grpc_rejects_non_grpc_content_type() {
+	mut s := new_test_server()
+	mut h := http.new_header()
+	h.add(.content_type, 'application/json')
+	req := http.Request{
+		method: .post
+		url:    '/echo.Echo/Ok'
+		header: h
+		data:   encode_frame('x'.bytes(), false).bytestr()
+	}
+	resp := s.handle(req)
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '13' // internal
+}

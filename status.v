@@ -97,3 +97,25 @@ fn hex_val(c u8) int {
 	}
 	return -1
 }
+
+// percent_encode is the inverse used when a server writes grpc-message:
+// printable ASCII (0x20..0x7E) passes through except `%`; every other byte
+// becomes %XX with uppercase hex, matching what percent_decode reverses.
+pub fn percent_encode(s string) string {
+	mut out := []u8{cap: s.len}
+	for i in 0 .. s.len {
+		c := s[i]
+		if c >= 0x20 && c <= 0x7e && c != `%` {
+			out << c
+		} else {
+			out << `%`
+			out << hex_digit(c >> 4)
+			out << hex_digit(c & 0x0f)
+		}
+	}
+	return out.bytestr()
+}
+
+fn hex_digit(n u8) u8 {
+	return if n < 10 { `0` + n } else { `A` + (n - 10) }
+}
