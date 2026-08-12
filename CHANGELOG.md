@@ -34,10 +34,10 @@ only Connect.
   existing `percent_decode`).
 
 ### Notes
-- Requires a V toolchain with server-side HTTP/2 response trailers
-  (vlang/v#28066): on master now, not yet in a tagged release (the 0.5.2 tag
-  predates it). CI builds against master via `setup-v`'s `check-latest`, so it
-  compiles there; users pinned to a `stable` V release need the next release.
+- **grpc.v now tracks V master.** The native gRPC server needs server-side
+  HTTP/2 response trailers + h2c (vlang/v#28066), not yet in a tagged V release;
+  CI builds against master via `setup-v`'s `check-latest`. The `ConnectServer`
+  alone still builds on stable V.
 - **Streaming is buffered, not incremental** — one POST each way, so it fits
   finite streams and inherits the server's 8 MiB request-body cap. True
   incremental delivery and **bidirectional** streaming need an upstream
