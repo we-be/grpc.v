@@ -36,11 +36,24 @@ pub fn (mut x KVClient) scan(req GetRequest, opts ...grpc.CallOption) !grpc.Repl
 	}
 }
 
+pub fn (mut x KVClient) put_many(reqs []PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutManyResponse] {
+	mut bodies := [][]u8{cap: reqs.len}
+	for r in reqs {
+		bodies << r.encode()
+	}
+	raw := x.c.client_stream('/kv.KV/PutMany', bodies, ...opts)!
+	return grpc.Reply[PutManyResponse]{
+		msg:      PutManyResponse.decode(raw.payload)!
+		metadata: raw.metadata
+	}
+}
+
 pub interface KVHandler {
 mut:
 	get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse
 	put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse
 	scan(mut ctx grpc.ServerContext, req GetRequest) ![]GetResponse
+	put_many(mut ctx grpc.ServerContext, reqs []PutRequest) !PutManyResponse
 }
 
 pub struct KVService {
@@ -128,6 +141,14 @@ pub fn (mut s KVService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Server
 				out << r.encode()
 			}
 			return out, true
+		}
+		'/kv.KV/PutMany' {
+			mut msgs := []PutRequest{cap: reqs.len}
+			for b_ in reqs {
+				msgs << PutRequest.decode(b_)!
+			}
+			resp := s.h.put_many(mut ctx, msgs)!
+			return [resp.encode()], true
 		}
 		else {
 			return [][]u8{}, false

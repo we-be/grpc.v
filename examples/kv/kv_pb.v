@@ -367,3 +367,85 @@ pub fn PutResponse.from_json_value(a json2.Any) !PutResponse {
 	}
 	return m
 }
+
+pub struct PutManyResponse {
+pub mut:
+	written    int
+	pb_unknown []u8 // unrecognized fields, re-emitted on encode
+}
+
+pub fn (m &PutManyResponse) encoded_size() int {
+	mut n := 0
+	if m.written != 0 {
+		n += protobuf.tag_len(1) + protobuf.varint_len(u64(i64(m.written)))
+	}
+	return n + m.pb_unknown.len
+}
+
+pub fn (m &PutManyResponse) encode_to(mut e protobuf.Encoder) {
+	if m.written != 0 {
+		e.write_int32_field(1, m.written)
+	}
+	e.write_raw(m.pb_unknown)
+}
+
+pub fn (m &PutManyResponse) encode() []u8 {
+	mut e := protobuf.Encoder{
+		buf: []u8{cap: m.encoded_size()}
+	}
+	m.encode_to(mut e)
+	return e.buf
+}
+
+pub fn PutManyResponse.decode(buf []u8) !PutManyResponse {
+	mut m := PutManyResponse{}
+	mut d := protobuf.Decoder{
+		buf: buf
+	}
+	for d.more() {
+		tag_start := d.pos
+		field, wt := d.read_tag()!
+		match field {
+			1 {
+				m.written = d.read_int32()!
+			}
+			else {
+				d.skip(wt)!
+				m.pb_unknown << d.buf[tag_start..d.pos]
+			}
+		}
+	}
+	return m
+}
+
+pub fn (m &PutManyResponse) json() !string {
+	return m.json_value()!.json_str()
+}
+
+pub fn PutManyResponse.from_json(s string) !PutManyResponse {
+	return PutManyResponse.from_json_value(protobuf.json_parse(s)!)
+}
+
+pub fn (m &PutManyResponse) json_value() !json2.Any {
+	mut o := map[string]json2.Any{}
+	if m.written != 0 {
+		o['written'] = json2.Any(i64(m.written))
+	}
+	return json2.Any(o)
+}
+
+pub fn PutManyResponse.from_json_value(a json2.Any) !PutManyResponse {
+	obj := protobuf.json_object(a)!
+	mut m := PutManyResponse{}
+	for jk, jv in obj {
+		match jk {
+			'written' {
+				if jv !is json2.Null {
+					m.written = protobuf.json_int32v(jv)!
+				}
+			}
+			else {}
+		}
+	}
+	return m
+}

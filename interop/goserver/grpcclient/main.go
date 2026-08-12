@@ -131,5 +131,23 @@ func main() {
 		fail("scan-stream", fmt.Errorf("expected [v-k1 v-k2 v-k3], got %v", vals))
 	}
 
-	fmt.Println("GRPC-GO -> V GrpcServer INTEROP OK (unary + server-streaming)")
+	// client-streaming: Send several PutRequests, then CloseAndRecv the count
+	ps, err := c.PutMany(ctx)
+	if err != nil {
+		fail("putmany", err)
+	}
+	for _, k := range []string{"c1", "c2", "c3", "c4"} {
+		if err := ps.Send(&kv.PutRequest{Key: k, Value: []byte("s-" + k)}); err != nil {
+			fail("putmany-send", err)
+		}
+	}
+	pmr, err := ps.CloseAndRecv()
+	if err != nil {
+		fail("putmany-recv", err)
+	}
+	if pmr.Written != 4 {
+		fail("putmany-count", fmt.Errorf("expected written=4, got %d", pmr.Written))
+	}
+
+	fmt.Println("GRPC-GO -> V GrpcServer INTEROP OK (unary + server-streaming + client-streaming)")
 }

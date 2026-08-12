@@ -1,4 +1,5 @@
-// the etcd-lite dogfood schema: unary get/put now, streaming scan later
+// the etcd-lite dogfood schema: unary get/put, server-streaming scan,
+// client-streaming put_many
 syntax = "proto3";
 
 package kv;
@@ -23,8 +24,13 @@ message PutResponse {
   bool replaced = 1;
 }
 
+message PutManyResponse {
+  int32 written = 1;
+}
+
 service KV {
   rpc Get (GetRequest) returns (GetResponse);
   rpc Put (PutRequest) returns (PutResponse);
   rpc Scan (GetRequest) returns (stream GetResponse);
+  rpc PutMany (stream PutRequest) returns (PutManyResponse);
 }

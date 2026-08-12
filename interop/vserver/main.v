@@ -99,6 +99,17 @@ fn (mut s Store) scan(mut ctx grpc.ServerContext, req GetRequest) ![]GetResponse
 	return out
 }
 
+// put_many writes every request in the client's stream and reports the count —
+// the client-streaming path.
+fn (mut s Store) put_many(mut ctx grpc.ServerContext, reqs []PutRequest) !PutManyResponse {
+	for req in reqs {
+		s.m[req.key] = req.value
+	}
+	return PutManyResponse{
+		written: reqs.len
+	}
+}
+
 fn main() {
 	addr := if os.args.len > 1 { os.args[1] } else { ':8181' }
 	// same KVService, two transports: native gRPC over h2/h2c by default,
