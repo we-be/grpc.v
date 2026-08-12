@@ -101,11 +101,11 @@ fn (mut s Store) scan(mut ctx grpc.ServerContext, req GetRequest) ![]GetResponse
 
 fn main() {
 	addr := if os.args.len > 1 { os.args[1] } else { ':8181' }
-	// same KVService, two transports: `grpc` serves native gRPC over h2/h2c,
-	// anything else serves Connect over HTTP/1.1
-	mode := if os.args.len > 2 { os.args[2] } else { 'connect' }
-	if mode == 'grpc' {
-		mut srv := grpc.GrpcServer{
+	// same KVService, two transports: native gRPC over h2/h2c by default,
+	// `connect` for the Connect protocol over HTTP/1.1
+	mode := if os.args.len > 2 { os.args[2] } else { 'grpc' }
+	if mode == 'connect' {
+		mut srv := grpc.ConnectServer{
 			addr: addr
 		}
 		srv.mount(KVService{
@@ -114,7 +114,7 @@ fn main() {
 		println('READY')
 		srv.listen_and_serve() or { panic(err) }
 	} else {
-		mut srv := grpc.ConnectServer{
+		mut srv := grpc.GrpcServer{
 			addr: addr
 		}
 		srv.mount(KVService{

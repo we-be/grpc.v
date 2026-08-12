@@ -61,7 +61,7 @@ fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
 
 fn main() {
 	addr := if os.args.len > 1 { os.args[1] } else { ':8383' }
-	mut srv := grpc.ConnectServer{
+	mut srv := grpc.GrpcServer{
 		addr: addr
 	}
 	srv.mount(RegistryService{

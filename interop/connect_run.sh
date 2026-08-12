@@ -9,7 +9,7 @@ command -v go >/dev/null || { echo "go toolchain required"; exit 1; }
 (cd goserver && go build -o connectclient-bin ./connectclient)
 v -o vserver/vserver-bin vserver
 
-./vserver/vserver-bin 127.0.0.1:8181 &
+./vserver/vserver-bin 127.0.0.1:8181 connect &
 SRV=$!
 trap 'kill $SRV 2>/dev/null || true' EXIT
 
