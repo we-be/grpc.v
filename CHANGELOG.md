@@ -13,17 +13,18 @@ in any 0.x release. 1.0 waits for the native gRPC server (gated on upstream V
 HTTP/2 response-trailer support) to prove the server API against real gRPC, not
 only Connect.
 
-## [Unreleased]
+## [0.3.0] - 2026-08-11
 
 ### Added
 - **Native gRPC server** (`GrpcServer`): real gRPC over HTTP/2 — TLS via ALPN,
   or cleartext h2c on a plain listener — with 5-byte message framing and the
   terminal status in HTTP/2 trailers. Drives the same generated dispatch as
   `ConnectServer`, so one service is served over either transport unchanged.
-  Proven against a real grpc-go client (v1.83.0) over h2c — unary and
-  server-streaming: success bodies, Trailers-Only errors, a percent-encoded
-  `grpc-message`, the status-code table, and leading vs trailing metadata all
-  round-trip (`interop/grpc_run.sh`, `interop/goserver/grpcclient`).
+  Proven against a real grpc-go client (v1.83.0) over h2c — unary,
+  server-streaming, and client-streaming: success bodies, Trailers-Only errors,
+  a percent-encoded `grpc-message`, the status-code table, and leading vs
+  trailing metadata all round-trip (`interop/grpc_run.sh`,
+  `interop/goserver/grpcclient`).
 - **Buffered streaming** (server- and client-streaming). A server-streaming rpc
   materializes its whole response into the body as multiple gRPC frames; a
   client-streaming rpc consumes the whole buffered request. Generated stubs
