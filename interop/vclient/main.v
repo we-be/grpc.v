@@ -46,6 +46,32 @@ fn main() {
 		fail('missing key reported found')
 	}
 
+	// awkward payloads must round-trip byte-exact through the gRPC bytes
+	// field + 5-byte framing: a 1 MiB blob, a binary value (NUL, high
+	// bytes, multi-byte UTF-8), and the empty value. Mirrors the connect
+	// interop client's payload coverage on the native-gRPC transport.
+	mut big := []u8{len: 1 << 20}
+	for i in 0 .. big.len {
+		big[i] = u8(i * 31)
+	}
+	tricky := [u8(0x00), 0xff, 0xfe, 0xc3, 0xa9, 0xf0, 0x9f, 0x9a, 0x80, 0x0a, 0x09]
+	payloads := {
+		'big':    big
+		'tricky': tricky
+		'empty':  []u8{}
+	}
+	for name, val in payloads {
+		key := 'payload-${name}'
+		client.put(PutRequest{ key: key, value: val }) or { fail('${name} put: ${err.msg()}') }
+		got := client.get(GetRequest{ key: key }) or { fail('${name} get: ${err.msg()}') }
+		if !got.msg.found {
+			fail('${name} not found')
+		}
+		if got.msg.value != val {
+			fail('${name} roundtrip mismatch (${got.msg.value.len} bytes)')
+		}
+	}
+
 	// metadata: a request header is echoed back as response metadata
 	echoed := client.get(GetRequest{ key: 'k1' }, grpc.header('x-echo', 'ping')) or {
 		fail('metadata call: ${err.msg()}')
