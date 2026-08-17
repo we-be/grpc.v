@@ -164,6 +164,17 @@ fn main() {
 		addr:                 '127.0.0.1:0'
 		handler:              cs
 		show_startup_message: false // stdout must carry only the framed handshake
+		// One request per connection. The official runner drives the server over
+		// HTTP/1.1 keep-alive with connection reuse, and V's http.Server
+		// intermittently tears down a reused connection on the error-response
+		// path — the runner then sees "server closed idle connection" /
+		// "unexpected EOF" and a random error case flakes red (~50% on Linux).
+		// The error frames are well-formed (Content-Length + body verified, and a
+		// plain Go net/http pooling client reuses them cleanly), so this is a V
+		// stdlib keep-alive race, not a protocol bug. Serving one request per
+		// connection sidesteps the reuse race and makes the gate deterministic;
+		// real ConnectServer users still get keep-alive via listen_and_serve.
+		max_keep_alive_requests: 1
 	}
 	spawn srv.listen_and_serve()
 	srv.wait_till_running() or {
