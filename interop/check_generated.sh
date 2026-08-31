@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Refuse to run interop against stale generated code: regenerate every
 # example's *_pb.v / *_grpc.v from its .proto with the current vpbgen and
-# diff against what is committed. The interop copies under vclient/vserver
-# are symlinks to examples/kv, so they cannot drift and are not checked
-# here. Finds vpbgen in ~/.vmodules/protobuf (CI layout) or a sibling
-# checkout.
+# diff against what is committed. The comparison is on token streams, not
+# bytes: vpbgen vfmt's its output, so a byte-exact gate holds every committed
+# stub hostage to upstream formatter changes — V's v3 formatter backend
+# (vlang/v#28176) re-flowed match arms and struct-field alignment and
+# dropped the space in `== (b`, without changing a single token. Stripping
+# whitespace keeps the gate blocking and on what it is for: the generated
+# code's shape — a renamed field, changed type or new method still trips it. The interop copies under
+# vclient/vserver are symlinks to examples/kv, so they cannot drift and are
+# not checked here. Finds vpbgen in ~/.vmodules/protobuf (CI layout) or a
+# sibling checkout.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,11 +27,13 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 stale=0
 
+norm() { tr -d '[:space:]' < "$1"; }
+
 check() { # check <proto> <dir> <basename>
   v run "$pbgen" -m main -json \
     -o "$tmp/$3_pb.v" -grpc "$tmp/$3_grpc.v" "$1" >/dev/null
   for suf in pb grpc; do
-    if ! cmp -s "$tmp/$3_${suf}.v" "$2/$3_${suf}.v"; then
+    if ! diff -q <(norm "$tmp/$3_${suf}.v") <(norm "$2/$3_${suf}.v") >/dev/null; then
       echo "STALE: $2/$3_${suf}.v differs from vpbgen output"
       stale=1
     fi
