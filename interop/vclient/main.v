@@ -109,5 +109,26 @@ fn main() {
 			fail('boom not a StatusError: ${err.msg()}')
 		}
 	}
+	// the full error-code table: every code 1..16 must arrive as itself,
+	// with its percent-encoded unicode grpc-message intact. Both reference
+	// servers honour the same `code:<n>` convention the V server uses.
+	for n in 1 .. 17 {
+		want := grpc.code_from_int(n) or { fail('code_from_int(${n}): ${err.msg()}') }
+		if _ := client.get(GetRequest{ key: 'code:${n}' }) {
+			fail('code:${n} should have errored')
+		} else {
+			if err is grpc.StatusError {
+				if err.status.code != want {
+					fail('code:${n} got ${err.status.code}')
+				}
+				if err.status.message != 'status 🚀 ${n}' {
+					fail('code:${n} message: `${err.status.message}`')
+				}
+			} else {
+				fail('code:${n} not a StatusError: ${err.msg()}')
+			}
+		}
+	}
+
 	println('INTEROP OK')
 }

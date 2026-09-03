@@ -68,14 +68,19 @@ jobs:
           v -o /tmp/vclient-ex interop/vclient
           v -o /tmp/vserver-ex interop/vserver
 
-      # the three live interop suites: V client vs grpc-go over TLS/h2,
-      # connect-go vs the V ConnectServer in both codecs, and the kvd
+      # the live interop suites: V client vs grpc-go and vs connect-go over
+      # TLS/h2, connect-go vs the V ConnectServer in both codecs, and the kvd
       # etcd-lite smoke with a persistence-proving restart
       - name: gRPC interop (V client vs grpc-go)
         run: ./interop/run.sh
 
       - name: Connect interop (connect-go vs V server)
         run: ./interop/connect_run.sh
+
+      # the same vclient assertions as run.sh, against connect-go's gRPC
+      # handler instead of grpc-go: a second implementation of the wire story
+      - name: gRPC interop (V client vs connect-go)
+        run: ./interop/connect_grpc_run.sh
 
       # Linux-only: the suite passes 85/88 on Linux, but on macos/arm64 it trips
       # a V stdlib bug — http.Server corrupts request bytes/headers under its

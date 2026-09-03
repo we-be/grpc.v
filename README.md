@@ -132,12 +132,13 @@ still converging and may break in any 0.x release. See
 
 ## What's proven
 
-CI runs four live interop suites against reference implementations on every push:
+CI runs five live interop suites against reference implementations on every push:
 
 | suite | what it proves |
 |---|---|
 | [`interop/grpc_run.sh`](interop) | a real grpc-go client vs the V `GrpcServer` over h2c (unary + server-streaming) |
 | [`interop/run.sh`](interop) | the V client vs a real grpc-go server over TLS/h2 |
+| [`interop/connect_grpc_run.sh`](interop) | the same client assertions vs a connect-go server over TLS/h2 |
 | [`interop/connect_run.sh`](interop) | connect-go clients vs the V `ConnectServer`, both codecs |
 | [`interop/conformance`](interop/conformance) | the official Connect conformance suite (85/88) |
 

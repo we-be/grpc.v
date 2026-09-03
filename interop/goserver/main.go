@@ -8,6 +8,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +39,15 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 	if req.Key == "boom" {
 		// unicode message exercises percent-encoding on the wire
 		return nil, status.Error(codes.InvalidArgument, "bad key: 🚀 boom")
+	}
+	// `code:<n>` drives the full error-code table: return code n with a
+	// unicode message, so the V client can assert every code round-trips.
+	if n, ok := strings.CutPrefix(req.Key, "code:"); ok {
+		v, err := strconv.Atoi(n)
+		if err != nil || v < 1 || v > 16 {
+			return nil, status.Errorf(codes.Internal, "bad code %s", n)
+		}
+		return nil, status.Errorf(codes.Code(v), "status 🚀 %d", v)
 	}
 	if req.Key == "slow" {
 		// sleep past any sane client deadline so the client's timeout fires

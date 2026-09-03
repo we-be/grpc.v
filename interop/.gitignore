@@ -3,3 +3,4 @@ goserver/kvserver
 vserver/vserver-bin
 goserver/connectclient-bin
 conformance/.bin/
+goserver/connectserver-bin
