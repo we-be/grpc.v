@@ -22,10 +22,14 @@ jobs:
         with:
           path: repo
 
+      # pinned to the last V master commit that builds a working compiler:
+      # vlang/v#28378 (2026-09-05) made Linux/macOS `v` a V3 self-build, and
+      # that binary corrupts memory on `import net.http`. Bump .v-version once
+      # upstream fixes it (tracked in vlang/v#28384).
       - name: Setup V
         uses: vlang/setup-v@v1
         with:
-          check-latest: true
+          version-file: .v-version
 
       # the interop suites build grpc-go / connect-go reference peers
       - name: Setup Go
