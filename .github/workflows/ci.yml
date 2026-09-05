@@ -29,7 +29,7 @@ jobs:
       - name: Setup V
         uses: vlang/setup-v@v1
         with:
-          version-file: .v-version
+          version-file: repo/.v-version
 
       # the interop suites build grpc-go / connect-go reference peers
       - name: Setup Go
