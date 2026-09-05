@@ -377,7 +377,7 @@ pub mut:
 pub fn (m &PutManyResponse) encoded_size() int {
 	mut n := 0
 	if m.written != 0 {
-		n += protobuf.tag_len(1) + protobuf.varint_len(u64(i64(m.written)))
+		n += protobuf.tag_len(1) + protobuf.varint_len(protobuf.int32_wire(m.written))
 	}
 	return n + m.pb_unknown.len
 }
@@ -429,7 +429,7 @@ pub fn PutManyResponse.from_json(s string) !PutManyResponse {
 pub fn (m &PutManyResponse) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.written != 0 {
-		o['written'] = json2.Any(i64(m.written))
+		o['written'] = json2.Any(i64(i32(m.written)))
 	}
 	return json2.Any(o)
 }

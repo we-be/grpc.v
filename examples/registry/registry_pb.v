@@ -16,18 +16,28 @@ fn health_to_json(v Health) json2.Any {
 		0 { json2.Any('HEALTH_UNKNOWN') }
 		1 { json2.Any('HEALTH_PASSING') }
 		2 { json2.Any('HEALTH_CRITICAL') }
-		else { json2.Any(i64(int(v))) }
+		else { json2.Any(i64(i32(int(v)))) }
 	}
 }
 
 fn health_from_json(a json2.Any) !Health {
 	if a is string {
 		match a {
-			'HEALTH_UNKNOWN' { return unsafe { Health(0) } }
-			'HEALTH_PASSING' { return unsafe { Health(1) } }
-			'HEALTH_OK' { return unsafe { Health(1) } }
-			'HEALTH_CRITICAL' { return unsafe { Health(2) } }
-			else { return error('protojson: unknown value `${a}` for Health') }
+			'HEALTH_UNKNOWN' {
+				return unsafe { Health(0) }
+			}
+			'HEALTH_PASSING' {
+				return unsafe { Health(1) }
+			}
+			'HEALTH_OK' {
+				return unsafe { Health(1) }
+			}
+			'HEALTH_CRITICAL' {
+				return unsafe { Health(2) }
+			}
+			else {
+				return error('protojson: unknown value `${a}` for Health')
+			}
 		}
 	}
 	return unsafe { Health(int(protobuf.json_intv(a)!)) }
@@ -46,7 +56,7 @@ pub mut:
 	pb_unknown []u8 // unrecognized fields, re-emitted on encode
 }
 
-pub fn (a Node) == (b Node) bool {
+pub fn (a Node) ==(b Node) bool {
 	return a.encode() == b.encode()
 }
 
@@ -56,11 +66,10 @@ pub fn (m &Node) encoded_size() int {
 		n += protobuf.len_field_len(1, m.name.len)
 	}
 	if int(m.health) != 0 {
-		n += protobuf.tag_len(2) + protobuf.varint_len(u64(i64(int(m.health))))
+		n += protobuf.tag_len(2) + protobuf.varint_len(protobuf.int32_wire(int(m.health)))
 	}
 	for k, v in m.meta {
-		n += protobuf.len_field_len(3, protobuf.len_field_len(1, k.len) +
-			protobuf.len_field_len(2, v.len))
+		n += protobuf.len_field_len(3, protobuf.len_field_len(1, k.len) + protobuf.len_field_len(2, v.len))
 	}
 	if registered := m.registered {
 		n += protobuf.len_field_len(4, registered.encoded_size())
@@ -158,8 +167,12 @@ pub fn Node.decode(buf []u8) !Node {
 				for sub.more() {
 					mf, mw := sub.read_tag()!
 					match mf {
-						1 { mk = sub.read_string()! }
-						2 { mv = sub.read_string()! }
+						1 {
+							mk = sub.read_string()!
+						}
+						2 {
+							mv = sub.read_string()!
+						}
 						else { sub.skip(mw)! }
 					}
 				}
@@ -217,7 +230,7 @@ pub fn Node.decode(buf []u8) !Node {
 pub fn (m &Node) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/registry.Node'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -394,7 +407,7 @@ pub fn PutRequest.decode(buf []u8) !PutRequest {
 pub fn (m &PutRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/registry.PutRequest'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -447,7 +460,7 @@ pub mut:
 pub fn (m &PutResponse) encoded_size() int {
 	mut n := 0
 	if m.nodes != 0 {
-		n += protobuf.tag_len(1) + protobuf.varint_len(u64(i64(m.nodes)))
+		n += protobuf.tag_len(1) + protobuf.varint_len(protobuf.int32_wire(m.nodes))
 	}
 	return n + m.pb_unknown.len
 }
@@ -491,7 +504,7 @@ pub fn PutResponse.decode(buf []u8) !PutResponse {
 pub fn (m &PutResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/registry.PutResponse'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -514,7 +527,7 @@ pub fn PutResponse.from_json(s string) !PutResponse {
 pub fn (m &PutResponse) json_value() !json2.Any {
 	mut o := map[string]json2.Any{}
 	if m.nodes != 0 {
-		o['nodes'] = json2.Any(i64(m.nodes))
+		o['nodes'] = json2.Any(i64(i32(m.nodes)))
 	}
 	return json2.Any(o)
 }
@@ -588,7 +601,7 @@ pub fn GetRequest.decode(buf []u8) !GetRequest {
 pub fn (m &GetRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/registry.GetRequest'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -703,7 +716,7 @@ pub fn GetResponse.decode(buf []u8) !GetResponse {
 pub fn (m &GetResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/registry.GetResponse'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -768,7 +781,7 @@ pub fn (m &GoogleProtobuf_Timestamp) encoded_size() int {
 		n += protobuf.tag_len(1) + protobuf.varint_len(u64(m.seconds))
 	}
 	if m.nanos != 0 {
-		n += protobuf.tag_len(2) + protobuf.varint_len(u64(i64(m.nanos)))
+		n += protobuf.tag_len(2) + protobuf.varint_len(protobuf.int32_wire(m.nanos))
 	}
 	return n + m.pb_unknown.len
 }
@@ -829,14 +842,14 @@ pub fn (m &GoogleProtobuf_Timestamp) as_time() time.Time {
 pub fn GoogleProtobuf_Timestamp.from_time(t time.Time) GoogleProtobuf_Timestamp {
 	return GoogleProtobuf_Timestamp{
 		seconds: t.unix()
-		nanos:   t.nanosecond
+		nanos: t.nanosecond
 	}
 }
 
 pub fn (m &GoogleProtobuf_Timestamp) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/google.protobuf.Timestamp'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -881,7 +894,7 @@ pub fn GoogleProtobuf_Timestamp.from_json_value(a json2.Any) !GoogleProtobuf_Tim
 	secs, nanos := protobuf.parse_timestamp_rfc3339(s)!
 	return GoogleProtobuf_Timestamp{
 		seconds: secs
-		nanos:   nanos
+		nanos: nanos
 	}
 }
 
@@ -898,7 +911,7 @@ pub fn (m &GoogleProtobuf_Duration) encoded_size() int {
 		n += protobuf.tag_len(1) + protobuf.varint_len(u64(m.seconds))
 	}
 	if m.nanos != 0 {
-		n += protobuf.tag_len(2) + protobuf.varint_len(u64(i64(m.nanos)))
+		n += protobuf.tag_len(2) + protobuf.varint_len(protobuf.int32_wire(m.nanos))
 	}
 	return n + m.pb_unknown.len
 }
@@ -967,14 +980,14 @@ pub fn (m &GoogleProtobuf_Duration) as_duration() time.Duration {
 pub fn GoogleProtobuf_Duration.from_duration(d time.Duration) GoogleProtobuf_Duration {
 	return GoogleProtobuf_Duration{
 		seconds: i64(d) / 1_000_000_000
-		nanos:   int(i64(d) % 1_000_000_000)
+		nanos: int(i64(d) % 1_000_000_000)
 	}
 }
 
 pub fn (m &GoogleProtobuf_Duration) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/google.protobuf.Duration'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -997,8 +1010,7 @@ pub fn GoogleProtobuf_Duration.from_json(s string) !GoogleProtobuf_Duration {
 // canonical JSON form: decimal seconds with an s suffix
 pub fn (m &GoogleProtobuf_Duration) json_value() !json2.Any {
 	// protojson range: |seconds| <= 315576000000, matching-sign nanos
-	if m.seconds < -315576000000 || m.seconds > 315576000000 || m.nanos < -999999999
-		|| m.nanos > 999999999 {
+	if m.seconds < -315576000000 || m.seconds > 315576000000 || m.nanos < -999999999 || m.nanos > 999999999 {
 		return error('protojson: duration out of range')
 	}
 	if (m.seconds < 0 && m.nanos > 0) || (m.seconds > 0 && m.nanos < 0) {
@@ -1055,7 +1067,7 @@ pub fn GoogleProtobuf_Duration.from_json_value(a json2.Any) !GoogleProtobuf_Dura
 	}
 	return GoogleProtobuf_Duration{
 		seconds: secs
-		nanos:   int(nanos)
+		nanos: int(nanos)
 	}
 }
 
@@ -1127,7 +1139,7 @@ pub fn (m &GoogleProtobuf_Any) type_name() string {
 pub fn (m &GoogleProtobuf_Any) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/google.protobuf.Any'
-		value:    m.encode()
+		value: m.encode()
 	}
 }
 
@@ -1187,7 +1199,7 @@ pub fn GoogleProtobuf_Any.from_json_value(a json2.Any) !GoogleProtobuf_Any {
 	value := pb_any_from_json(name, obj)!
 	return GoogleProtobuf_Any{
 		type_url: type_url
-		value:    value
+		value: value
 	}
 }
 
@@ -1251,21 +1263,15 @@ fn pb_any_from_json(pb_name string, pb_obj map[string]json2.Any) ![]u8 {
 			return GetResponse.from_json_value(json2.Any(pb_inner))!.encode()
 		}
 		'google.protobuf.Timestamp' {
-			pb_v := pb_obj['value'] or {
-				return error('protojson: Any of google.protobuf.Timestamp missing "value"')
-			}
+			pb_v := pb_obj['value'] or { return error('protojson: Any of google.protobuf.Timestamp missing "value"') }
 			return GoogleProtobuf_Timestamp.from_json_value(pb_v)!.encode()
 		}
 		'google.protobuf.Duration' {
-			pb_v := pb_obj['value'] or {
-				return error('protojson: Any of google.protobuf.Duration missing "value"')
-			}
+			pb_v := pb_obj['value'] or { return error('protojson: Any of google.protobuf.Duration missing "value"') }
 			return GoogleProtobuf_Duration.from_json_value(pb_v)!.encode()
 		}
 		'google.protobuf.Any' {
-			pb_v := pb_obj['value'] or {
-				return error('protojson: Any of google.protobuf.Any missing "value"')
-			}
+			pb_v := pb_obj['value'] or { return error('protojson: Any of google.protobuf.Any missing "value"') }
 			return GoogleProtobuf_Any.from_json_value(pb_v)!.encode()
 		}
 		else {

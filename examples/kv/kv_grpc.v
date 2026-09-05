@@ -11,7 +11,7 @@ pub mut:
 pub fn (mut x KVClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
 	raw := x.c.unary('/kv.KV/Get', req.encode(), ...opts)!
 	return grpc.Reply[GetResponse]{
-		msg:      GetResponse.decode(raw.payload)!
+		msg: GetResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -19,7 +19,7 @@ pub fn (mut x KVClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply
 pub fn (mut x KVClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
 	raw := x.c.unary('/kv.KV/Put', req.encode(), ...opts)!
 	return grpc.Reply[PutResponse]{
-		msg:      PutResponse.decode(raw.payload)!
+		msg: PutResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -31,7 +31,7 @@ pub fn (mut x KVClient) scan(req GetRequest, opts ...grpc.CallOption) !grpc.Repl
 		msgs << GetResponse.decode(p)!
 	}
 	return grpc.Reply[[]GetResponse]{
-		msg:      msgs
+		msg: msgs
 		metadata: raw.metadata
 	}
 }
@@ -43,7 +43,7 @@ pub fn (mut x KVClient) put_many(reqs []PutRequest, opts ...grpc.CallOption) !gr
 	}
 	raw := x.c.client_stream('/kv.KV/PutMany', bodies, ...opts)!
 	return grpc.Reply[PutManyResponse]{
-		msg:      PutManyResponse.decode(raw.payload)!
+		msg: PutManyResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -103,7 +103,7 @@ pub fn (mut s KVService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Server
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Get expects exactly one request message'
 					}
 				}
@@ -116,7 +116,7 @@ pub fn (mut s KVService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Server
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Put expects exactly one request message'
 					}
 				}
@@ -129,7 +129,7 @@ pub fn (mut s KVService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Server
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Scan expects exactly one request message'
 					}
 				}

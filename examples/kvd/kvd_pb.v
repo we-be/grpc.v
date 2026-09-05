@@ -549,7 +549,7 @@ pub fn (m &RangeRequest) encoded_size() int {
 		n += protobuf.len_field_len(2, m.end.len)
 	}
 	if m.limit != 0 {
-		n += protobuf.tag_len(3) + protobuf.varint_len(u64(i64(m.limit)))
+		n += protobuf.tag_len(3) + protobuf.varint_len(protobuf.int32_wire(m.limit))
 	}
 	return n + m.pb_unknown.len
 }
@@ -619,7 +619,7 @@ pub fn (m &RangeRequest) json_value() !json2.Any {
 		o['end'] = protobuf.json_b64(m.end)
 	}
 	if m.limit != 0 {
-		o['limit'] = json2.Any(i64(m.limit))
+		o['limit'] = json2.Any(i64(i32(m.limit)))
 	}
 	return json2.Any(o)
 }

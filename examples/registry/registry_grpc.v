@@ -11,7 +11,7 @@ pub mut:
 pub fn (mut x RegistryClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
 	raw := x.c.unary('/registry.Registry/Put', req.encode(), ...opts)!
 	return grpc.Reply[PutResponse]{
-		msg:      PutResponse.decode(raw.payload)!
+		msg: PutResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -19,7 +19,7 @@ pub fn (mut x RegistryClient) put(req PutRequest, opts ...grpc.CallOption) !grpc
 pub fn (mut x RegistryClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
 	raw := x.c.unary('/registry.Registry/Get', req.encode(), ...opts)!
 	return grpc.Reply[GetResponse]{
-		msg:      GetResponse.decode(raw.payload)!
+		msg: GetResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -77,7 +77,7 @@ pub fn (mut s RegistryService) grpc_call(path string, reqs [][]u8, mut ctx grpc.
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Put expects exactly one request message'
 					}
 				}
@@ -90,7 +90,7 @@ pub fn (mut s RegistryService) grpc_call(path string, reqs [][]u8, mut ctx grpc.
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Get expects exactly one request message'
 					}
 				}

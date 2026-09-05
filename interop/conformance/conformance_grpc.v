@@ -11,20 +11,19 @@ pub mut:
 pub fn (mut x ConformanceServiceClient) unary(req UnaryRequest, opts ...grpc.CallOption) !grpc.Reply[UnaryResponse] {
 	raw := x.c.unary('/connectrpc.conformance.v1.ConformanceService/Unary', req.encode(), ...opts)!
 	return grpc.Reply[UnaryResponse]{
-		msg:      UnaryResponse.decode(raw.payload)!
+		msg: UnaryResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
 
 pub fn (mut x ConformanceServiceClient) server_stream(req ServerStreamRequest, opts ...grpc.CallOption) !grpc.Reply[[]ServerStreamResponse] {
-	raw := x.c.server_stream('/connectrpc.conformance.v1.ConformanceService/ServerStream',
-		req.encode(), ...opts)!
+	raw := x.c.server_stream('/connectrpc.conformance.v1.ConformanceService/ServerStream', req.encode(), ...opts)!
 	mut msgs := []ServerStreamResponse{cap: raw.payloads.len}
 	for p in raw.payloads {
 		msgs << ServerStreamResponse.decode(p)!
 	}
 	return grpc.Reply[[]ServerStreamResponse]{
-		msg:      msgs
+		msg: msgs
 		metadata: raw.metadata
 	}
 }
@@ -34,10 +33,9 @@ pub fn (mut x ConformanceServiceClient) client_stream(reqs []ClientStreamRequest
 	for r in reqs {
 		bodies << r.encode()
 	}
-	raw := x.c.client_stream('/connectrpc.conformance.v1.ConformanceService/ClientStream', bodies,
-		...opts)!
+	raw := x.c.client_stream('/connectrpc.conformance.v1.ConformanceService/ClientStream', bodies, ...opts)!
 	return grpc.Reply[ClientStreamResponse]{
-		msg:      ClientStreamResponse.decode(raw.payload)!
+		msg: ClientStreamResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -45,19 +43,17 @@ pub fn (mut x ConformanceServiceClient) client_stream(reqs []ClientStreamRequest
 // rpc BidiStream skipped: bidirectional streaming is not supported yet
 
 pub fn (mut x ConformanceServiceClient) unimplemented(req UnimplementedRequest, opts ...grpc.CallOption) !grpc.Reply[UnimplementedResponse] {
-	raw := x.c.unary('/connectrpc.conformance.v1.ConformanceService/Unimplemented', req.encode(),
-		...opts)!
+	raw := x.c.unary('/connectrpc.conformance.v1.ConformanceService/Unimplemented', req.encode(), ...opts)!
 	return grpc.Reply[UnimplementedResponse]{
-		msg:      UnimplementedResponse.decode(raw.payload)!
+		msg: UnimplementedResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
 
 pub fn (mut x ConformanceServiceClient) idempotent_unary(req IdempotentUnaryRequest, opts ...grpc.CallOption) !grpc.Reply[IdempotentUnaryResponse] {
-	raw := x.c.unary('/connectrpc.conformance.v1.ConformanceService/IdempotentUnary', req.encode(),
-		...opts)!
+	raw := x.c.unary('/connectrpc.conformance.v1.ConformanceService/IdempotentUnary', req.encode(), ...opts)!
 	return grpc.Reply[IdempotentUnaryResponse]{
-		msg:      IdempotentUnaryResponse.decode(raw.payload)!
+		msg: IdempotentUnaryResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -132,7 +128,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Unary expects exactly one request message'
 					}
 				}
@@ -145,7 +141,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'ServerStream expects exactly one request message'
 					}
 				}
@@ -170,7 +166,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Unimplemented expects exactly one request message'
 					}
 				}
@@ -183,7 +179,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'IdempotentUnary expects exactly one request message'
 					}
 				}

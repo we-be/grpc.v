@@ -11,7 +11,7 @@ pub mut:
 pub fn (mut x KVDClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Reply[GetResponse] {
 	raw := x.c.unary('/kvd.KVD/Get', req.encode(), ...opts)!
 	return grpc.Reply[GetResponse]{
-		msg:      GetResponse.decode(raw.payload)!
+		msg: GetResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -19,7 +19,7 @@ pub fn (mut x KVDClient) get(req GetRequest, opts ...grpc.CallOption) !grpc.Repl
 pub fn (mut x KVDClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Reply[PutResponse] {
 	raw := x.c.unary('/kvd.KVD/Put', req.encode(), ...opts)!
 	return grpc.Reply[PutResponse]{
-		msg:      PutResponse.decode(raw.payload)!
+		msg: PutResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -27,7 +27,7 @@ pub fn (mut x KVDClient) put(req PutRequest, opts ...grpc.CallOption) !grpc.Repl
 pub fn (mut x KVDClient) delete(req DeleteRequest, opts ...grpc.CallOption) !grpc.Reply[DeleteResponse] {
 	raw := x.c.unary('/kvd.KVD/Delete', req.encode(), ...opts)!
 	return grpc.Reply[DeleteResponse]{
-		msg:      DeleteResponse.decode(raw.payload)!
+		msg: DeleteResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -35,7 +35,7 @@ pub fn (mut x KVDClient) delete(req DeleteRequest, opts ...grpc.CallOption) !grp
 pub fn (mut x KVDClient) range(req RangeRequest, opts ...grpc.CallOption) !grpc.Reply[RangeResponse] {
 	raw := x.c.unary('/kvd.KVD/Range', req.encode(), ...opts)!
 	return grpc.Reply[RangeResponse]{
-		msg:      RangeResponse.decode(raw.payload)!
+		msg: RangeResponse.decode(raw.payload)!
 		metadata: raw.metadata
 	}
 }
@@ -123,7 +123,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Get expects exactly one request message'
 					}
 				}
@@ -136,7 +136,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Put expects exactly one request message'
 					}
 				}
@@ -149,7 +149,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Delete expects exactly one request message'
 					}
 				}
@@ -162,7 +162,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code: .invalid_argument
 						message: 'Range expects exactly one request message'
 					}
 				}
