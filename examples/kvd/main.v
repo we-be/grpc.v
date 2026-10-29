@@ -19,13 +19,11 @@ mut:
 }
 
 fn (mut s Store) get(mut ctx grpc.ServerContext, req GetRequest) !GetResponse {
-	if v := s.db.get(req.key, leveldb.ReadOptions{}) {
-		return GetResponse{
-			value: v
-			found: true
-		}
+	hit := s.db.get(req.key, leveldb.ReadOptions{})!
+	return GetResponse{
+		value: hit.value
+		found: hit.found
 	}
-	return GetResponse{}
 }
 
 fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
@@ -37,7 +35,7 @@ fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 			}
 		}
 	}
-	replaced := s.db.has(req.key, leveldb.ReadOptions{})
+	replaced := s.db.has(req.key, leveldb.ReadOptions{})!
 	s.db.put(req.key, req.value, leveldb.WriteOptions{})!
 	return PutResponse{
 		replaced: replaced
@@ -45,7 +43,7 @@ fn (mut s Store) put(mut ctx grpc.ServerContext, req PutRequest) !PutResponse {
 }
 
 fn (mut s Store) delete(mut ctx grpc.ServerContext, req DeleteRequest) !DeleteResponse {
-	existed := s.db.has(req.key, leveldb.ReadOptions{})
+	existed := s.db.has(req.key, leveldb.ReadOptions{})!
 	if existed {
 		s.db.delete(req.key, leveldb.WriteOptions{})!
 	}

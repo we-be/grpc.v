@@ -45,7 +45,8 @@ jobs:
           mkdir -p ~/.vmodules
           ln -s "$PWD" ~/.vmodules/grpc
           git clone --depth 1 https://github.com/we-be/protobuf.v ~/.vmodules/protobuf
-          git clone --depth 1 https://github.com/vlang/leveldb ~/.vmodules/leveldb
+          # a tag, not HEAD: kvd broke when leveldb's get/has became fallible
+          git clone --depth 1 --branch v0.1.1 https://github.com/vlang/leveldb ~/.vmodules/leveldb
 
       # vfmt switched to the v3 formatter backend upstream (vlang/v#28176,
       # 2026-08-28) and is still growing features back: it re-expands
