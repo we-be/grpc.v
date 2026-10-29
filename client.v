@@ -78,10 +78,11 @@ fn (mut c Client) do_call(path string, body []u8, opts ...CallOption) !(int, htt
 		}
 	}
 	mut fc := http.FetchConfig{
-		url:    c.base_url + path
-		method: .post
-		header: h
-		data:   body.bytestr()
+		url:          c.base_url + path
+		method:       .post
+		header:       h
+		data:         body.bytestr()
+		enable_http2: true // gRPC is h2-only; net.http advertises h2 over TLS only on request
 	}
 	if cfg.timeout > 0 {
 		// enforce the deadline client-side too, not just as a server hint
