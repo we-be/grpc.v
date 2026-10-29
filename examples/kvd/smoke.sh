@@ -33,7 +33,10 @@ trap 'kill $SRV 2>/dev/null || true' EXIT
 
 expect "$(call Put '{"key":"aGk=","value":"d29ybGQ="}')" '{}' "first put"
 expect "$(call Put '{"key":"aGk=","value":"eA=="}')" '"replaced":true' "second put"
-expect "$(call Get '{"key":"aGk="}')" '"value":"eA==","found":true' "get"
+# JSON key order is not semantic (V's json2 sorts keys), so check each field
+got=$(call Get '{"key":"aGk="}')
+expect "$got" '"value":"eA=="' "get"
+expect "$got" '"found":true' "get"
 expect "$(call Get '{"key":"bm8="}')" '{}' "miss"
 expect "$(call Put '{"key":"YQ==","value":"MQ=="}')" '{}' "put a"
 expect "$(call Put '{"key":"Yg==","value":"Mg=="}')" '{}' "put b"
@@ -47,6 +50,8 @@ expect "$(call Put '{"key":""}')" '"code":"invalid_argument"' "empty key refused
 kill $SRV
 wait $SRV 2>/dev/null || true
 start
-expect "$(call Get '{"key":"aGk="}')" '"value":"eA==","found":true' "get after restart"
+got=$(call Get '{"key":"aGk="}')
+expect "$got" '"value":"eA=="' "get after restart"
+expect "$got" '"found":true' "get after restart"
 
 echo "kvd smoke OK (incl. persistence across restart)"

@@ -22,10 +22,12 @@ jobs:
         with:
           path: repo
 
-      # pinned to the last V master commit that builds a working compiler:
-      # vlang/v#28378 (2026-09-05) made Linux/macOS `v` a V3 self-build, and
-      # that binary corrupts memory on `import net.http`. Bump .v-version once
-      # upstream fixes it (tracked in vlang/v#28384).
+      # no V release builds on current runners, so we pin a master commit.
+      # Pins rot: `make` bootstraps through whatever vlang/vc publishes
+      # today, and vc stops publishing for a commit master has moved past,
+      # so the old c918d7ce82 pin died in `make` with `./v2: No such file
+      # or directory` — nothing to do with our code. Re-pin to a fresh
+      # master commit when this one rots too.
       - name: Setup V
         uses: vlang/setup-v@v1
         with:
@@ -86,7 +88,7 @@ jobs:
       - name: gRPC interop (V client vs connect-go)
         run: ./interop/connect_grpc_run.sh
 
-      # Linux-only: the suite passes 85/88 on Linux, but on macos/arm64 it trips
+      # Linux-only: the suite passes 87/88 on Linux, but on macos/arm64 it trips
       # a V stdlib bug — http.Server corrupts request bytes/headers under its
       # request loop on arm64 (content-type reads stale, bodies get mis-decoded;
       # layout/timing-sensitive). It is NOT in grpc.v or json2 (both verified

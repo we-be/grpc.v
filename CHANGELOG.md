@@ -13,6 +13,16 @@ in any 0.x release. 1.0 waits for the native gRPC server (gated on upstream V
 HTTP/2 response-trailer support) to prove the server API against real gRPC, not
 only Connect.
 
+## [Unreleased]
+
+### Fixed
+- **The client speaks HTTP/2 on current V.** `net.http` now offers `h2` over
+  TLS only when a request opts in, so the client sets `enable_http2` — without
+  it every call went out as HTTP/1.1 and failed. CI pins V ee35432ff0.
+- Connect conformance is 87/88: V's `http.Server` now sends HTTP 499 for
+  `canceled`, so that case left the known-failing list. Message receive limits
+  remain the one gap.
+
 ## [0.3.0] - 2026-08-11
 
 ### Added

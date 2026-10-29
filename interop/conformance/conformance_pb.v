@@ -24,21 +24,11 @@ fn httpversion_to_json(v HTTPVersion) json2.Any {
 fn httpversion_from_json(a json2.Any) !HTTPVersion {
 	if a is string {
 		match a {
-			'HTTP_VERSION_UNSPECIFIED' {
-				return unsafe { HTTPVersion(0) }
-			}
-			'HTTP_VERSION_1' {
-				return unsafe { HTTPVersion(1) }
-			}
-			'HTTP_VERSION_2' {
-				return unsafe { HTTPVersion(2) }
-			}
-			'HTTP_VERSION_3' {
-				return unsafe { HTTPVersion(3) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for HTTPVersion')
-			}
+			'HTTP_VERSION_UNSPECIFIED' { return unsafe { HTTPVersion(0) } }
+			'HTTP_VERSION_1' { return unsafe { HTTPVersion(1) } }
+			'HTTP_VERSION_2' { return unsafe { HTTPVersion(2) } }
+			'HTTP_VERSION_3' { return unsafe { HTTPVersion(3) } }
+			else { return error('protojson: unknown value `${a}` for HTTPVersion') }
 		}
 	}
 	return unsafe { HTTPVersion(int(protobuf.json_intv(a)!)) }
@@ -64,21 +54,11 @@ fn protocol_to_json(v Protocol) json2.Any {
 fn protocol_from_json(a json2.Any) !Protocol {
 	if a is string {
 		match a {
-			'PROTOCOL_UNSPECIFIED' {
-				return unsafe { Protocol(0) }
-			}
-			'PROTOCOL_CONNECT' {
-				return unsafe { Protocol(1) }
-			}
-			'PROTOCOL_GRPC' {
-				return unsafe { Protocol(2) }
-			}
-			'PROTOCOL_GRPC_WEB' {
-				return unsafe { Protocol(3) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for Protocol')
-			}
+			'PROTOCOL_UNSPECIFIED' { return unsafe { Protocol(0) } }
+			'PROTOCOL_CONNECT' { return unsafe { Protocol(1) } }
+			'PROTOCOL_GRPC' { return unsafe { Protocol(2) } }
+			'PROTOCOL_GRPC_WEB' { return unsafe { Protocol(3) } }
+			else { return error('protojson: unknown value `${a}` for Protocol') }
 		}
 	}
 	return unsafe { Protocol(int(protobuf.json_intv(a)!)) }
@@ -104,21 +84,11 @@ fn codec_to_json(v Codec) json2.Any {
 fn codec_from_json(a json2.Any) !Codec {
 	if a is string {
 		match a {
-			'CODEC_UNSPECIFIED' {
-				return unsafe { Codec(0) }
-			}
-			'CODEC_PROTO' {
-				return unsafe { Codec(1) }
-			}
-			'CODEC_JSON' {
-				return unsafe { Codec(2) }
-			}
-			'CODEC_TEXT' {
-				return unsafe { Codec(3) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for Codec')
-			}
+			'CODEC_UNSPECIFIED' { return unsafe { Codec(0) } }
+			'CODEC_PROTO' { return unsafe { Codec(1) } }
+			'CODEC_JSON' { return unsafe { Codec(2) } }
+			'CODEC_TEXT' { return unsafe { Codec(3) } }
+			else { return error('protojson: unknown value `${a}` for Codec') }
 		}
 	}
 	return unsafe { Codec(int(protobuf.json_intv(a)!)) }
@@ -150,30 +120,14 @@ fn compression_to_json(v Compression) json2.Any {
 fn compression_from_json(a json2.Any) !Compression {
 	if a is string {
 		match a {
-			'COMPRESSION_UNSPECIFIED' {
-				return unsafe { Compression(0) }
-			}
-			'COMPRESSION_IDENTITY' {
-				return unsafe { Compression(1) }
-			}
-			'COMPRESSION_GZIP' {
-				return unsafe { Compression(2) }
-			}
-			'COMPRESSION_BR' {
-				return unsafe { Compression(3) }
-			}
-			'COMPRESSION_ZSTD' {
-				return unsafe { Compression(4) }
-			}
-			'COMPRESSION_DEFLATE' {
-				return unsafe { Compression(5) }
-			}
-			'COMPRESSION_SNAPPY' {
-				return unsafe { Compression(6) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for Compression')
-			}
+			'COMPRESSION_UNSPECIFIED' { return unsafe { Compression(0) } }
+			'COMPRESSION_IDENTITY' { return unsafe { Compression(1) } }
+			'COMPRESSION_GZIP' { return unsafe { Compression(2) } }
+			'COMPRESSION_BR' { return unsafe { Compression(3) } }
+			'COMPRESSION_ZSTD' { return unsafe { Compression(4) } }
+			'COMPRESSION_DEFLATE' { return unsafe { Compression(5) } }
+			'COMPRESSION_SNAPPY' { return unsafe { Compression(6) } }
+			else { return error('protojson: unknown value `${a}` for Compression') }
 		}
 	}
 	return unsafe { Compression(int(protobuf.json_intv(a)!)) }
@@ -203,27 +157,13 @@ fn streamtype_to_json(v StreamType) json2.Any {
 fn streamtype_from_json(a json2.Any) !StreamType {
 	if a is string {
 		match a {
-			'STREAM_TYPE_UNSPECIFIED' {
-				return unsafe { StreamType(0) }
-			}
-			'STREAM_TYPE_UNARY' {
-				return unsafe { StreamType(1) }
-			}
-			'STREAM_TYPE_CLIENT_STREAM' {
-				return unsafe { StreamType(2) }
-			}
-			'STREAM_TYPE_SERVER_STREAM' {
-				return unsafe { StreamType(3) }
-			}
-			'STREAM_TYPE_HALF_DUPLEX_BIDI_STREAM' {
-				return unsafe { StreamType(4) }
-			}
-			'STREAM_TYPE_FULL_DUPLEX_BIDI_STREAM' {
-				return unsafe { StreamType(5) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for StreamType')
-			}
+			'STREAM_TYPE_UNSPECIFIED' { return unsafe { StreamType(0) } }
+			'STREAM_TYPE_UNARY' { return unsafe { StreamType(1) } }
+			'STREAM_TYPE_CLIENT_STREAM' { return unsafe { StreamType(2) } }
+			'STREAM_TYPE_SERVER_STREAM' { return unsafe { StreamType(3) } }
+			'STREAM_TYPE_HALF_DUPLEX_BIDI_STREAM' { return unsafe { StreamType(4) } }
+			'STREAM_TYPE_FULL_DUPLEX_BIDI_STREAM' { return unsafe { StreamType(5) } }
+			else { return error('protojson: unknown value `${a}` for StreamType') }
 		}
 	}
 	return unsafe { StreamType(int(protobuf.json_intv(a)!)) }
@@ -275,60 +215,24 @@ fn code_to_json(v Code) json2.Any {
 fn code_from_json(a json2.Any) !Code {
 	if a is string {
 		match a {
-			'CODE_UNSPECIFIED' {
-				return unsafe { Code(0) }
-			}
-			'CODE_CANCELED' {
-				return unsafe { Code(1) }
-			}
-			'CODE_UNKNOWN' {
-				return unsafe { Code(2) }
-			}
-			'CODE_INVALID_ARGUMENT' {
-				return unsafe { Code(3) }
-			}
-			'CODE_DEADLINE_EXCEEDED' {
-				return unsafe { Code(4) }
-			}
-			'CODE_NOT_FOUND' {
-				return unsafe { Code(5) }
-			}
-			'CODE_ALREADY_EXISTS' {
-				return unsafe { Code(6) }
-			}
-			'CODE_PERMISSION_DENIED' {
-				return unsafe { Code(7) }
-			}
-			'CODE_RESOURCE_EXHAUSTED' {
-				return unsafe { Code(8) }
-			}
-			'CODE_FAILED_PRECONDITION' {
-				return unsafe { Code(9) }
-			}
-			'CODE_ABORTED' {
-				return unsafe { Code(10) }
-			}
-			'CODE_OUT_OF_RANGE' {
-				return unsafe { Code(11) }
-			}
-			'CODE_UNIMPLEMENTED' {
-				return unsafe { Code(12) }
-			}
-			'CODE_INTERNAL' {
-				return unsafe { Code(13) }
-			}
-			'CODE_UNAVAILABLE' {
-				return unsafe { Code(14) }
-			}
-			'CODE_DATA_LOSS' {
-				return unsafe { Code(15) }
-			}
-			'CODE_UNAUTHENTICATED' {
-				return unsafe { Code(16) }
-			}
-			else {
-				return error('protojson: unknown value `${a}` for Code')
-			}
+			'CODE_UNSPECIFIED' { return unsafe { Code(0) } }
+			'CODE_CANCELED' { return unsafe { Code(1) } }
+			'CODE_UNKNOWN' { return unsafe { Code(2) } }
+			'CODE_INVALID_ARGUMENT' { return unsafe { Code(3) } }
+			'CODE_DEADLINE_EXCEEDED' { return unsafe { Code(4) } }
+			'CODE_NOT_FOUND' { return unsafe { Code(5) } }
+			'CODE_ALREADY_EXISTS' { return unsafe { Code(6) } }
+			'CODE_PERMISSION_DENIED' { return unsafe { Code(7) } }
+			'CODE_RESOURCE_EXHAUSTED' { return unsafe { Code(8) } }
+			'CODE_FAILED_PRECONDITION' { return unsafe { Code(9) } }
+			'CODE_ABORTED' { return unsafe { Code(10) } }
+			'CODE_OUT_OF_RANGE' { return unsafe { Code(11) } }
+			'CODE_UNIMPLEMENTED' { return unsafe { Code(12) } }
+			'CODE_INTERNAL' { return unsafe { Code(13) } }
+			'CODE_UNAVAILABLE' { return unsafe { Code(14) } }
+			'CODE_DATA_LOSS' { return unsafe { Code(15) } }
+			'CODE_UNAUTHENTICATED' { return unsafe { Code(16) } }
+			else { return error('protojson: unknown value `${a}` for Code') }
 		}
 	}
 	return unsafe { Code(int(protobuf.json_intv(a)!)) }
@@ -483,7 +387,7 @@ pub fn UnaryResponseDefinition.decode(buf []u8) !UnaryResponseDefinition {
 pub fn (m &UnaryResponseDefinition) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.UnaryResponseDefinition'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -716,7 +620,7 @@ pub fn StreamResponseDefinition.decode(buf []u8) !StreamResponseDefinition {
 pub fn (m &StreamResponseDefinition) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.StreamResponseDefinition'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -889,7 +793,7 @@ pub fn UnaryRequest.decode(buf []u8) !UnaryRequest {
 pub fn (m &UnaryRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.UnaryRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1002,7 +906,7 @@ pub fn UnaryResponse.decode(buf []u8) !UnaryResponse {
 pub fn (m &UnaryResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.UnaryResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1117,7 +1021,7 @@ pub fn IdempotentUnaryRequest.decode(buf []u8) !IdempotentUnaryRequest {
 pub fn (m &IdempotentUnaryRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.IdempotentUnaryRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1230,7 +1134,7 @@ pub fn IdempotentUnaryResponse.decode(buf []u8) !IdempotentUnaryResponse {
 pub fn (m &IdempotentUnaryResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.IdempotentUnaryResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1345,7 +1249,7 @@ pub fn ServerStreamRequest.decode(buf []u8) !ServerStreamRequest {
 pub fn (m &ServerStreamRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ServerStreamRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1458,7 +1362,7 @@ pub fn ServerStreamResponse.decode(buf []u8) !ServerStreamResponse {
 pub fn (m &ServerStreamResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ServerStreamResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1573,7 +1477,7 @@ pub fn ClientStreamRequest.decode(buf []u8) !ClientStreamRequest {
 pub fn (m &ClientStreamRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ClientStreamRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1686,7 +1590,7 @@ pub fn ClientStreamResponse.decode(buf []u8) !ClientStreamResponse {
 pub fn (m &ClientStreamResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ClientStreamResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1811,7 +1715,7 @@ pub fn BidiStreamRequest.decode(buf []u8) !BidiStreamRequest {
 pub fn (m &BidiStreamRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.BidiStreamRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -1932,7 +1836,7 @@ pub fn BidiStreamResponse.decode(buf []u8) !BidiStreamResponse {
 pub fn (m &BidiStreamResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.BidiStreamResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2014,7 +1918,7 @@ pub fn UnimplementedRequest.decode(buf []u8) !UnimplementedRequest {
 pub fn (m &UnimplementedRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.UnimplementedRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2081,7 +1985,7 @@ pub fn UnimplementedResponse.decode(buf []u8) !UnimplementedResponse {
 pub fn (m &UnimplementedResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.UnimplementedResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2181,7 +2085,7 @@ pub fn ConformancePayload.decode(buf []u8) !ConformancePayload {
 pub fn (m &ConformancePayload) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ConformancePayload'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2328,7 +2232,7 @@ pub fn ConformancePayload_RequestInfo.decode(buf []u8) !ConformancePayload_Reque
 pub fn (m &ConformancePayload_RequestInfo) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ConformancePayload.RequestInfo'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2463,7 +2367,7 @@ pub fn ConformancePayload_ConnectGetInfo.decode(buf []u8) !ConformancePayload_Co
 pub fn (m &ConformancePayload_ConnectGetInfo) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ConformancePayload.ConnectGetInfo'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2588,7 +2492,7 @@ pub fn Error_.decode(buf []u8) !Error_ {
 pub fn (m &Error_) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.Error'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2717,7 +2621,7 @@ pub fn Header.decode(buf []u8) !Header {
 pub fn (m &Header) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.Header'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -2937,7 +2841,7 @@ pub fn RawHTTPRequest.decode(buf []u8) !RawHTTPRequest {
 pub fn (m &RawHTTPRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.RawHTTPRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3142,7 +3046,7 @@ pub fn RawHTTPRequest_EncodedQueryParam.decode(buf []u8) !RawHTTPRequest_Encoded
 pub fn (m &RawHTTPRequest_EncodedQueryParam) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.RawHTTPRequest.EncodedQueryParam'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3330,7 +3234,7 @@ pub fn MessageContents.decode(buf []u8) !MessageContents {
 pub fn (m &MessageContents) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.MessageContents'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3474,7 +3378,7 @@ pub fn StreamContents.decode(buf []u8) !StreamContents {
 pub fn (m &StreamContents) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.StreamContents'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3605,7 +3509,7 @@ pub fn StreamContents_StreamItem.decode(buf []u8) !StreamContents_StreamItem {
 pub fn (m &StreamContents_StreamItem) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.StreamContents.StreamItem'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3805,7 +3709,7 @@ pub fn RawHTTPResponse.decode(buf []u8) !RawHTTPResponse {
 pub fn (m &RawHTTPResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.RawHTTPResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -3992,7 +3896,7 @@ pub fn Config.decode(buf []u8) !Config {
 pub fn (m &Config) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.Config'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -4332,7 +4236,7 @@ pub fn Features.decode(buf []u8) !Features {
 pub fn (m &Features) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.Features'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -4617,7 +4521,7 @@ pub fn ConfigCase.decode(buf []u8) !ConfigCase {
 pub fn (m &ConfigCase) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ConfigCase'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -4780,7 +4684,7 @@ pub fn TLSCreds.decode(buf []u8) !TLSCreds {
 pub fn (m &TLSCreds) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.TLSCreds'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -4900,7 +4804,7 @@ pub fn (m &GoogleProtobuf_Any) type_name() string {
 pub fn (m &GoogleProtobuf_Any) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/google.protobuf.Any'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -4960,7 +4864,7 @@ pub fn GoogleProtobuf_Any.from_json_value(a json2.Any) !GoogleProtobuf_Any {
 	value := pb_any_from_json(name, obj)!
 	return GoogleProtobuf_Any{
 		type_url: type_url
-		value: value
+		value:    value
 	}
 }
 
@@ -5075,7 +4979,7 @@ pub fn ServerCompatRequest.decode(buf []u8) !ServerCompatRequest {
 pub fn (m &ServerCompatRequest) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ServerCompatRequest'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -5232,7 +5136,7 @@ pub fn ServerCompatResponse.decode(buf []u8) !ServerCompatResponse {
 pub fn (m &ServerCompatResponse) to_any() GoogleProtobuf_Any {
 	return GoogleProtobuf_Any{
 		type_url: 'type.googleapis.com/connectrpc.conformance.v1.ServerCompatResponse'
-		value: m.encode()
+		value:    m.encode()
 	}
 }
 
@@ -5390,9 +5294,7 @@ fn pb_any_to_json(pb_name string, pb_value []u8) !(json2.Any, bool) {
 		'connectrpc.conformance.v1.ServerCompatResponse' {
 			return ServerCompatResponse.decode(pb_value)!.json_value()!, false
 		}
-		else {
-			return error('protojson: unresolvable Any type `${pb_name}`')
-		}
+		else { return error('protojson: unresolvable Any type `${pb_name}`') }
 	}
 }
 
@@ -5557,8 +5459,6 @@ fn pb_any_from_json(pb_name string, pb_obj map[string]json2.Any) ![]u8 {
 			pb_inner.delete('@type')
 			return ServerCompatResponse.from_json_value(json2.Any(pb_inner))!.encode()
 		}
-		else {
-			return error('protojson: unresolvable Any type `${pb_name}`')
-		}
+		else { return error('protojson: unresolvable Any type `${pb_name}`') }
 	}
 }
