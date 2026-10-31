@@ -15,13 +15,18 @@ only Connect.
 
 ## [Unreleased]
 
+### Added
+- **Request size limits.** `ConnectServer.max_receive_bytes` and
+  `GrpcServer.max_receive_bytes` reject a request message over the limit with
+  `resource_exhausted` before any handler runs (Connect: HTTP 429). 0, the
+  default, means no limit. Connect conformance is now 88/88.
+
 ### Fixed
 - **The client speaks HTTP/2 on current V.** `net.http` now offers `h2` over
   TLS only when a request opts in, so the client sets `enable_http2` — without
   it every call went out as HTTP/1.1 and failed. CI pins V ee35432ff0.
-- Connect conformance is 87/88: V's `http.Server` now sends HTTP 499 for
-  `canceled`, so that case left the known-failing list. Message receive limits
-  remain the one gap.
+- `canceled` passes conformance: V's `http.Server` now sends HTTP 499 for
+  `canceled`, so that case left the known-failing list.
 
 ## [0.3.0] - 2026-08-11
 

@@ -69,6 +69,10 @@ pub struct ConnectServer {
 pub mut:
 	addr     string
 	services []Service
+	// max_receive_bytes caps a request message: a larger body is rejected
+	// with resource_exhausted before any handler runs. 0 means no limit
+	// (connect-go's ReadMaxBytes default).
+	max_receive_bytes int
 }
 
 pub fn (mut s ConnectServer) mount(svc Service) {
@@ -106,6 +110,10 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 	mut ctx := ServerContext{
 		request_headers: request_metadata(req.header)
 	}
+	if s.max_receive_bytes > 0 && req.data.len > s.max_receive_bytes {
+		return connect_error_response(.resource_exhausted, receive_limit_message(req.data.len,
+			s.max_receive_bytes), ctx)
+	}
 	body := req.data.bytes()
 	for mut svc in s.services {
 		res, found := svc.call(path, codec, body, mut ctx) or {
@@ -137,6 +145,12 @@ pub fn (mut s ConnectServer) handle(req http.Request) http.Response {
 	}, ctx)
 	nf.status_code = 404
 	return nf
+}
+
+// receive_limit_message is the resource_exhausted text both servers send for
+// an over-limit request message.
+fn receive_limit_message(size int, limit int) string {
+	return 'message size ${size} is larger than configured max ${limit}'
 }
 
 // request_metadata lowercases every incoming header into the handler's request

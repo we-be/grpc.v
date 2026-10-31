@@ -142,7 +142,7 @@ CI runs five live interop suites against reference implementations on every push
 | [`interop/run.sh`](interop) | the V client vs a real grpc-go server over TLS/h2 |
 | [`interop/connect_grpc_run.sh`](interop) | the same client assertions vs a connect-go server over TLS/h2 |
 | [`interop/connect_run.sh`](interop) | connect-go clients vs the V `ConnectServer`, both codecs |
-| [`interop/conformance`](interop/conformance) | the official Connect conformance suite (87/88) |
+| [`interop/conformance`](interop/conformance) | the official Connect conformance suite (88/88) |
 
 Generated `*_pb.v`/`*_grpc.v` are checked in;
 [`interop/check_generated.sh`](interop) fails CI on drift.

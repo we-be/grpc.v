@@ -1,7 +1,3 @@
 # Conformance cases we knowingly do not pass yet, with why. The runner
 # REQUIRES these to fail (and fails if one starts passing), so this doubles as
 # a to-do list: delete a line the day we fix it.
-
-# Message receive limits are not implemented (same out-of-1.0-scope bucket as
-# compression and streaming): the server does not reject an oversized request.
-Server Message Size/**/request-exceeds-server-limit

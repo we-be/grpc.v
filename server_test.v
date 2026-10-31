@@ -260,3 +260,24 @@ fn test_error_details_serialized() {
 	// base64 of [1, 2, 3] is AQID
 	assert resp.body.contains('"value":"AQID"')
 }
+
+fn test_receive_limit_rejects_oversized_body() {
+	mut s := server()
+	s.max_receive_bytes = 4
+	over := post(mut s, '/t.Echo/Do', 'application/proto', 'toolong')
+	assert over.status_code == 429
+	assert over.body.contains('"code":"resource_exhausted"')
+	assert over.body.contains('message size 7 is larger than configured max 4')
+	// exactly at the limit still reaches the handler
+	at := post(mut s, '/t.Echo/Do', 'application/proto', 'four')
+	assert at.status_code == 200
+	assert at.body == 'four'
+}
+
+fn test_receive_limit_zero_is_unlimited() {
+	mut s := server()
+	big := 'x'.repeat(1 << 16)
+	resp := post(mut s, '/t.Echo/Do', 'application/proto', big)
+	assert resp.status_code == 200
+	assert resp.body.len == big.len
+}

@@ -89,7 +89,7 @@ jobs:
       - name: gRPC interop (V client vs connect-go)
         run: ./interop/connect_grpc_run.sh
 
-      # Linux-only: the suite passes 87/88 on Linux, but on macos/arm64 it trips
+      # Linux-only: the suite passes 88/88 on Linux, but on macos/arm64 it trips
       # a V stdlib bug — http.Server corrupts request bytes/headers under its
       # request loop on arm64 (content-type reads stale, bodies get mis-decoded;
       # layout/timing-sensitive). It is NOT in grpc.v or json2 (both verified

@@ -140,3 +140,16 @@ fn test_grpc_rejects_non_grpc_content_type() {
 	resp := s.handle(req)
 	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '13' // internal
 }
+
+fn test_grpc_receive_limit_checks_each_message() {
+	mut s := new_test_server()
+	s.max_receive_bytes = 2
+	// the third message is over the limit, so the whole call is refused
+	over := s.handle(grpc_request_multi('/echo.Echo/Ok', ['a'.bytes(), 'bb'.bytes(), 'ccc'.bytes()]))
+	assert over.status_code == 200
+	assert over.body == ''
+	assert (over.trailers.get_custom('grpc-status') or { '' }) == '8' // resource_exhausted
+	// every message within the limit is served
+	ok := s.handle(grpc_request_multi('/echo.Echo/Ok', ['a'.bytes(), 'bb'.bytes()]))
+	assert (ok.trailers.get_custom('grpc-status') or { '' }) == '0'
+}

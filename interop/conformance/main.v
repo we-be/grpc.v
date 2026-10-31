@@ -151,12 +151,14 @@ fn main() {
 		eprintln('conformance harness: read handshake failed: ${err}')
 		exit(1)
 	}
-	ServerCompatRequest.decode(raw) or {
+	compat := ServerCompatRequest.decode(raw) or {
 		eprintln('conformance harness: decode ServerCompatRequest failed: ${err}')
 		exit(1)
 	}
 
-	mut cs := grpc.ConnectServer{}
+	mut cs := grpc.ConnectServer{
+		max_receive_bytes: int(compat.message_receive_limit)
+	}
 	cs.mount(ConformanceServiceService{
 		h: ConformanceHandler{}
 	})

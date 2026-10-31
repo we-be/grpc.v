@@ -32,6 +32,10 @@ pub mut:
 	// the server runs cleartext h2c — what insecure gRPC clients use.
 	cert     string
 	cert_key string
+	// max_receive_bytes caps each request message: a larger one is rejected
+	// with resource_exhausted before any handler runs. 0 means no limit beyond
+	// the frame decoder's max_frame_len.
+	max_receive_bytes int
 }
 
 pub fn (mut s GrpcServer) mount(svc GrpcService) {
@@ -68,7 +72,7 @@ pub fn (mut s GrpcServer) handle(req http.Request) http.Response {
 	}
 	// unary + client-streaming both arrive as one or more length-prefixed
 	// request messages in the body
-	reqs := decode_request_frames(req.data.bytes()) or {
+	reqs := decode_request_frames(req.data.bytes(), s.max_receive_bytes) or {
 		if err is StatusError {
 			return grpc_error(err.status, ctx)
 		}
@@ -89,9 +93,10 @@ pub fn (mut s GrpcServer) handle(req http.Request) http.Response {
 }
 
 // decode_request_frames splits the request body into its message payloads,
-// rejecting a compressed frame (we don't negotiate compression) as unimplemented
-// and a truncated one as a decode error.
-fn decode_request_frames(body []u8) ![][]u8 {
+// rejecting a compressed frame (we don't negotiate compression) as unimplemented,
+// one over max_bytes (when > 0) as resource_exhausted, and a truncated one as a
+// decode error.
+fn decode_request_frames(body []u8, max_bytes int) ![][]u8 {
 	frames := decode_frames(body)!
 	mut msgs := [][]u8{cap: frames.len}
 	for f in frames {
@@ -100,6 +105,14 @@ fn decode_request_frames(body []u8) ![][]u8 {
 				status: Status{
 					code:    .unimplemented
 					message: 'compressed request not supported'
+				}
+			}
+		}
+		if max_bytes > 0 && f.payload.len > max_bytes {
+			return StatusError{
+				status: Status{
+					code:    .resource_exhausted
+					message: receive_limit_message(f.payload.len, max_bytes)
 				}
 			}
 		}
