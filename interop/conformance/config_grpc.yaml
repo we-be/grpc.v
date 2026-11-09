@@ -1,0 +1,20 @@
+# The native gRPC slice of the official conformance suite, run against
+# grpc.GrpcServer: gRPC protocol over cleartext h2c (prior knowledge), unary
+# only, proto codec, no TLS, no compression. Streaming is buffered in
+# GrpcServer and the runner's streaming cases need incremental delivery, so
+# they wait on an upstream net.http streaming-handler API; gRPC-Web and TLS
+# are out of scope for 1.0.
+features:
+  versions:
+    - HTTP_VERSION_2
+  protocols:
+    - PROTOCOL_GRPC
+  codecs:
+    - CODEC_PROTO
+  compressions:
+    - COMPRESSION_IDENTITY
+  streamTypes:
+    - STREAM_TYPE_UNARY
+  supportsH2c: true
+  supportsTls: false
+  supportsConnectGet: false

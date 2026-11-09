@@ -1,9 +1,10 @@
 // Server-under-test for the official Connect conformance runner
 // (connectrpc.com/conformance). The runner writes a length-prefixed
 // ServerCompatRequest on stdin, expects a ServerCompatResponse (host+port) on
-// stdout, then drives Connect RPCs against the ConformanceService we stand up
-// on our grpc.ConnectServer. We advertise Connect / HTTP1 / no-TLS via the
-// config, so the request's protocol knobs are informational here.
+// stdout, then drives RPCs against the ConformanceService we stand up. The
+// request's protocol picks the transport: Connect rides grpc.ConnectServer on
+// HTTP/1.1 (config.yaml); gRPC rides grpc.GrpcServer over cleartext h2c
+// (config_grpc.yaml). One handler serves both.
 //
 // Scope: unary only (ServerStream/ClientStream/BidiStream are post-1.0). The
 // generated glue skips those rpcs, so this handler implements Unary,
@@ -117,11 +118,41 @@ fn build_request_info(ctx grpc.ServerContext, req_any GoogleProtobuf_Any) Confor
 		request_headers: hdrs
 		requests:        [req_any]
 	}
-	t := ctx.header('connect-timeout-ms')
-	if t != '' {
-		info.timeout_ms = t.i64()
+	// Connect sends the deadline as plain milliseconds; gRPC as a
+	// grpc-timeout value (digits + unit). Echo whichever arrived.
+	if t := grpc_timeout_ms(ctx.header('grpc-timeout')) {
+		info.timeout_ms = t
+	} else {
+		t := ctx.header('connect-timeout-ms')
+		if t != '' {
+			info.timeout_ms = t.i64()
+		}
 	}
 	return info
+}
+
+// grpc_timeout_ms decodes a grpc-timeout header (1-8 ASCII digits and one of
+// H M S m u n) to whole milliseconds, none for an empty or malformed value.
+fn grpc_timeout_ms(s string) ?i64 {
+	if s.len < 2 || s.len > 9 {
+		return none
+	}
+	digits := s[..s.len - 1]
+	for c in digits {
+		if c < `0` || c > `9` {
+			return none
+		}
+	}
+	n := digits.i64()
+	match s[s.len - 1] {
+		`H` { return n * 3_600_000 }
+		`M` { return n * 60_000 }
+		`S` { return n * 1_000 }
+		`m` { return n }
+		`u` { return n / 1_000 }
+		`n` { return n / 1_000_000 }
+		else { return none }
+	}
 }
 
 fn to_status_error(e Error_, info ConformancePayload_RequestInfo) grpc.StatusError {
@@ -156,16 +187,37 @@ fn main() {
 		exit(1)
 	}
 
-	mut cs := grpc.ConnectServer{
-		max_receive_bytes: int(compat.message_receive_limit)
-	}
-	cs.mount(ConformanceServiceService{
-		h: ConformanceHandler{}
-	})
 	mut srv := &http.Server{
 		addr:                 '127.0.0.1:0'
-		handler:              cs
 		show_startup_message: false // stdout must carry only the framed handshake
+		// V's server gives each connection a worker thread for its whole life,
+		// and an h2c connection lives as long as the client keeps it. The
+		// runner's grpc-go client dials a connection per case and runs cases
+		// in parallel, so the default (one worker per CPU — four on a CI
+		// runner) leaves later connections waiting out the client's 5 s ready
+		// timeout. Enough workers for every connection the runner can hold open.
+		worker_num:           64
+	}
+	limit := int(compat.message_receive_limit)
+	if compat.protocol == .protocol_grpc {
+		// native gRPC over prior-knowledge h2c; the HTTP/1.1 keep-alive cap
+		// below is beside the point on a multiplexed connection
+		mut gs := grpc.GrpcServer{
+			max_receive_bytes: limit
+		}
+		gs.mount(ConformanceServiceService{
+			h: ConformanceHandler{}
+		})
+		srv.handler = gs
+		srv.enable_http2 = true
+	} else {
+		mut cs := grpc.ConnectServer{
+			max_receive_bytes: limit
+		}
+		cs.mount(ConformanceServiceService{
+			h: ConformanceHandler{}
+		})
+		srv.handler = cs
 		// One request per connection. The official runner drives the server over
 		// HTTP/1.1 keep-alive with connection reuse, and V's http.Server
 		// intermittently tears down a reused connection on the error-response
@@ -176,7 +228,7 @@ fn main() {
 		// stdlib keep-alive race, not a protocol bug. Serving one request per
 		// connection sidesteps the reuse race and makes the gate deterministic;
 		// real ConnectServer users still get keep-alive via listen_and_serve.
-		max_keep_alive_requests: 1
+		srv.max_keep_alive_requests = 1
 	}
 	spawn srv.listen_and_serve()
 	srv.wait_till_running() or {

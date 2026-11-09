@@ -1,12 +1,15 @@
 module grpc
 
 import net.http
+import encoding.base64
+import protobuf
 
 // A hand-rolled GrpcService so the server can be driven without generated
 // stubs: /echo.Echo/Ok echoes every request message back and stamps leading +
 // trailing metadata; /echo.Echo/Fan turns one request into three responses
 // (server-streaming shape); /echo.Echo/Boom fails with a unicode message;
-// anything else is a routing miss.
+// /echo.Echo/Detail fails with a typed error detail attached; anything else is
+// a routing miss.
 struct EchoSvc {}
 
 fn (mut e EchoSvc) grpc_call(path string, reqs [][]u8, mut ctx ServerContext) !([][]u8, bool) {
@@ -24,6 +27,20 @@ fn (mut e EchoSvc) grpc_call(path string, reqs [][]u8, mut ctx ServerContext) !(
 				status: Status{
 					code:    .invalid_argument
 					message: 'nope 🚀'
+				}
+			}
+		}
+		'/echo.Echo/Detail' {
+			return StatusError{
+				status: Status{
+					code:    .failed_precondition
+					message: 'needs a detail'
+					details: [
+						ErrorDetail{
+							type_name: 'google.rpc.ErrorInfo'
+							value:     [u8(1), 2, 3, 4]
+						},
+					]
 				}
 			}
 		}
@@ -127,17 +144,122 @@ fn test_grpc_unknown_procedure_is_unimplemented() {
 	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '12' // unimplemented
 }
 
-fn test_grpc_rejects_non_grpc_content_type() {
-	mut s := new_test_server()
+fn grpc_request_with(path string, content_type string, extra map[string]string, body []u8) http.Request {
 	mut h := http.new_header()
-	h.add(.content_type, 'application/json')
-	req := http.Request{
-		method: .post
-		url:    '/echo.Echo/Ok'
-		header: h
-		data:   encode_frame('x'.bytes(), false).bytestr()
+	h.add(.content_type, content_type)
+	for k, v in extra {
+		h.add_custom(k, v) or { panic(err) }
 	}
-	resp := s.handle(req)
+	return http.Request{
+		method: .post
+		url:    path
+		header: h
+		data:   body.bytestr()
+	}
+}
+
+fn test_grpc_error_details_ride_in_status_details_bin() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request('/echo.Echo/Detail', 'x'.bytes()))
+	assert resp.body == ''
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '9' // failed_precondition
+	// the trailer is unpadded base64 of a google.rpc.Status
+	bin := resp.trailers.get_custom('grpc-status-details-bin') or { '' }
+	assert bin != ''
+	assert !bin.contains('=')
+	mut padded := bin
+	for padded.len % 4 != 0 {
+		padded += '='
+	}
+	mut d := protobuf.Decoder{
+		buf: base64.decode(padded)
+	}
+	mut code := 0
+	mut message := ''
+	mut type_url := ''
+	mut value := []u8{}
+	for d.more() {
+		field, wt := d.read_tag() or { panic(err) }
+		match field {
+			1 {
+				code = d.read_int32() or { panic(err) }
+			}
+			2 {
+				message = d.read_string() or { panic(err) }
+			}
+			3 {
+				mut any := protobuf.Decoder{
+					buf: d.read_bytes() or { panic(err) }
+				}
+				for any.more() {
+					af, awt := any.read_tag() or { panic(err) }
+					match af {
+						1 { type_url = any.read_string() or { panic(err) } }
+						2 { value = any.read_bytes() or { panic(err) } }
+						else { any.skip(awt) or { panic(err) } }
+					}
+				}
+			}
+			else {
+				d.skip(wt) or { panic(err) }
+			}
+		}
+	}
+	assert code == 9
+	assert message == 'needs a detail'
+	assert type_url == 'type.googleapis.com/google.rpc.ErrorInfo'
+	assert value == [u8(1), 2, 3, 4]
+}
+
+fn test_grpc_error_without_details_has_no_details_bin() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request('/echo.Echo/Boom', 'x'.bytes()))
+	assert (resp.trailers.get_custom('grpc-status-details-bin') or { 'absent' }) == 'absent'
+}
+
+fn test_grpc_non_grpc_content_type_is_http_415() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request_with('/echo.Echo/Ok', 'application/json', {},
+		encode_frame('x'.bytes(), false)))
+	// the spec's answer to a non-gRPC request: a plain HTTP error, no trailers
+	assert resp.status_code == 415
+	assert (resp.trailers.get_custom('grpc-status') or { 'absent' }) == 'absent'
+}
+
+fn test_grpc_unknown_codec_is_unimplemented() {
+	mut s := new_test_server()
+	for ct in ['application/grpc+json', 'application/grpc+flatbuffers'] {
+		resp := s.handle(grpc_request_with('/echo.Echo/Ok', ct, {}, encode_frame('x'.bytes(),
+			false)))
+		assert resp.status_code == 200
+		assert (resp.trailers.get_custom('grpc-status') or { '' }) == '12' // unimplemented
+	}
+	// bare application/grpc and an explicit +proto both mean proto
+	for ct in ['application/grpc', 'application/grpc+proto'] {
+		resp := s.handle(grpc_request_with('/echo.Echo/Ok', ct, {}, encode_frame('x'.bytes(),
+			false)))
+		assert (resp.trailers.get_custom('grpc-status') or { '' }) == '0'
+	}
+}
+
+fn test_grpc_unknown_compression_is_unimplemented_and_names_identity() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request_with('/echo.Echo/Ok', 'application/grpc', {
+		'grpc-encoding': 'gzip'
+	}, encode_frame('x'.bytes(), false)))
+	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '12' // unimplemented
+	assert (resp.header.get_custom('grpc-accept-encoding') or { '' }) == 'identity'
+	// identity, stated outright, is what we speak
+	ok := s.handle(grpc_request_with('/echo.Echo/Ok', 'application/grpc', {
+		'grpc-encoding': 'identity'
+	}, encode_frame('x'.bytes(), false)))
+	assert (ok.trailers.get_custom('grpc-status') or { '' }) == '0'
+}
+
+fn test_grpc_compressed_flag_under_identity_is_internal() {
+	mut s := new_test_server()
+	resp := s.handle(grpc_request_with('/echo.Echo/Ok', 'application/grpc', {},
+		encode_frame('x'.bytes(), true)))
 	assert (resp.trailers.get_custom('grpc-status') or { '' }) == '13' // internal
 }
 

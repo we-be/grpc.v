@@ -13,7 +13,8 @@ codes, trailers, and JSON are handled.
 - **gRPC client**: real gRPC over HTTP/2, proven against a live grpc-go server.
 - **Connect server**: the same service over HTTP/1.1 in proto and JSON, for
   browsers, connect clients, and curl. Proven against connect-go and the
-  official Connect conformance suite.
+  official Connect conformance suite, whose gRPC cases also run against the
+  native server.
 - **Generated glue**: `<Service>Client`, a `<Service>Handler`, and dispatch,
   from `vpbgen -grpc`.
 - **Typed errors**: `StatusError` with a gRPC/Connect code and a decoded message.
@@ -142,7 +143,7 @@ CI runs five live interop suites against reference implementations on every push
 | [`interop/run.sh`](interop) | the V client vs a real grpc-go server over TLS/h2 |
 | [`interop/connect_grpc_run.sh`](interop) | the same client assertions vs a connect-go server over TLS/h2 |
 | [`interop/connect_run.sh`](interop) | connect-go clients vs the V `ConnectServer`, both codecs |
-| [`interop/conformance`](interop/conformance) | the official Connect conformance suite (88/88) |
+| [`interop/conformance`](interop/conformance) | the official Connect conformance suite: Connect vs `ConnectServer` (88/88) and gRPC over h2c vs `GrpcServer` (62/64) |
 
 Generated `*_pb.v`/`*_grpc.v` are checked in;
 [`interop/check_generated.sh`](interop) fails CI on drift.

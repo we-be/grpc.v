@@ -9,17 +9,34 @@ grpc.v is pre-1.0 (**0.x**). The **wire behavior** — gRPC framing, the Connect
 protocol, status-code mapping, and error details — is production-solid, proven
 against grpc-go, connect-go, and the official Connect conformance suite, and is
 not expected to change. The **V API surface** is still converging and may break
-in any 0.x release. 1.0 waits for the native gRPC server (gated on upstream V
-HTTP/2 response-trailer support) to prove the server API against real gRPC, not
-only Connect.
+in any 0.x release. The native gRPC server landed in 0.3.0 and is proven
+against grpc-go and the official conformance suite's gRPC cases; 1.0 is the
+API freeze (roadmap: issue #1).
 
 ## [Unreleased]
 
 ### Added
+- **The official conformance suite runs against `GrpcServer`** — gRPC over
+  h2c, unary, proto — alongside the Connect run (`interop/conformance/run.sh`,
+  `config_grpc.yaml`): 62/64, the two gaps listed in `known_failing_grpc.txt`
+  (a unary rpc sent zero or several messages answers `invalid_argument` where
+  the suite wants `unimplemented`; that code lives in protobuf.v's codegen).
+- **Typed error details over native gRPC.** A `StatusError` with details now
+  rides as a `grpc-status-details-bin` trailer (a base64 `google.rpc.Status`,
+  unpadded as grpc-go emits it), so grpc-go and connect-go clients see them.
+  Connect already carried details in its error JSON.
 - **Request size limits.** `ConnectServer.max_receive_bytes` and
   `GrpcServer.max_receive_bytes` reject a request message over the limit with
   `resource_exhausted` before any handler runs (Connect: HTTP 429). 0, the
   default, means no limit. Connect conformance is now 88/88.
+
+### Changed
+- `GrpcServer` answers what the gRPC spec asks for on a request it cannot
+  serve: a non-gRPC content-type gets a plain **HTTP 415** (was a gRPC-framed
+  `internal`), a codec other than proto (`application/grpc+json`, …) is
+  `unimplemented`, an unsupported `grpc-encoding` is `unimplemented` with
+  `grpc-accept-encoding: identity` on the reply, and a frame flagged
+  compressed under identity encoding is `internal` (was `unimplemented`).
 
 ### Fixed
 - **The client speaks HTTP/2 on current V.** `net.http` now offers `h2` over

@@ -1,6 +1,8 @@
 module grpc
 
 import net.http
+import encoding.base64
+import protobuf
 
 // Native unary gRPC server over V's HTTP/2 stack. Where ConnectServer speaks
 // the Connect protocol on HTTP/1.1, GrpcServer speaks real gRPC: HTTP/2 (TLS
@@ -66,9 +68,27 @@ pub fn (mut s GrpcServer) handle(req http.Request) http.Response {
 	}
 	path := req.url.all_before('?')
 	ct := req.header.get(.content_type) or { '' }
+	// a request that is not gRPC at all gets the spec's plain HTTP 415, not a
+	// gRPC-framed status: whatever sent it cannot read trailers anyway
 	if !ct.starts_with('application/grpc') {
-		return grpc_error(Status{ code: .internal, message: 'unexpected content-type `${ct}`' },
+		return plain_response(415, 'unsupported media type `${ct}`: gRPC requires application/grpc')
+	}
+	// the content-type's sub-format names the codec; the generated dispatch
+	// decodes proto, so any other codec is one we do not implement
+	if !grpc_codec_is_proto(ct) {
+		return grpc_error(Status{ code: .unimplemented, message: 'unsupported codec `${ct}`' },
 			ctx)
+	}
+	// we negotiate no compression: a request encoded with anything but
+	// identity is unimplemented, and the reply names what we do accept
+	encoding := ctx.header('grpc-encoding')
+	if encoding != '' && encoding != 'identity' {
+		mut resp := grpc_error(Status{
+			code:    .unimplemented
+			message: 'unsupported compression `${encoding}`'
+		}, ctx)
+		resp.header.add_custom('grpc-accept-encoding', 'identity') or {}
+		return resp
 	}
 	// unary + client-streaming both arrive as one or more length-prefixed
 	// request messages in the body
@@ -92,10 +112,18 @@ pub fn (mut s GrpcServer) handle(req http.Request) http.Response {
 	return grpc_error(Status{ code: .unimplemented, message: 'no such procedure: ${path}' }, ctx)
 }
 
+// grpc_codec_is_proto reads the codec off a gRPC content-type: bare
+// `application/grpc` means proto, as does an explicit `+proto`.
+fn grpc_codec_is_proto(ct string) bool {
+	base := ct.all_before(';').trim_space()
+	return base == 'application/grpc' || base == 'application/grpc+proto'
+}
+
 // decode_request_frames splits the request body into its message payloads,
-// rejecting a compressed frame (we don't negotiate compression) as unimplemented,
-// one over max_bytes (when > 0) as resource_exhausted, and a truncated one as a
-// decode error.
+// rejecting one over max_bytes (when > 0) as resource_exhausted and a
+// truncated one as a decode error. handle has already established that
+// grpc-encoding is identity, so a frame flagged compressed is a protocol
+// error (the spec's INTERNAL), not a codec we lack.
 fn decode_request_frames(body []u8, max_bytes int) ![][]u8 {
 	frames := decode_frames(body)!
 	mut msgs := [][]u8{cap: frames.len}
@@ -103,8 +131,8 @@ fn decode_request_frames(body []u8, max_bytes int) ![][]u8 {
 		if f.compressed {
 			return StatusError{
 				status: Status{
-					code:    .unimplemented
-					message: 'compressed request not supported'
+					code:    .internal
+					message: 'compressed message under identity grpc-encoding'
 				}
 			}
 		}
@@ -156,9 +184,42 @@ fn grpc_error(status Status, ctx ServerContext) http.Response {
 	if status.message != '' {
 		trailers.add_custom('grpc-message', percent_encode(status.message)) or {}
 	}
+	if status.details.len > 0 {
+		trailers.add_custom('grpc-status-details-bin', encode_bin_header(encode_rpc_status(status))) or {}
+	}
 	apply_trailing(mut trailers, ctx)
 	resp.trailers = trailers
 	return resp
+}
+
+// encode_rpc_status serializes a Status as google.rpc.Status — int32 code (1),
+// string message (2), repeated Any details (3) — the message gRPC carries in
+// the grpc-status-details-bin trailer so typed error details reach the client.
+// Each ErrorDetail becomes an Any whose type_url is the conventional
+// `type.googleapis.com/` plus the detail's fully-qualified proto name.
+fn encode_rpc_status(status Status) []u8 {
+	mut e := protobuf.Encoder{}
+	if status.code != .ok {
+		e.write_int32_field(1, int(status.code))
+	}
+	if status.message != '' {
+		e.write_string_field(2, status.message)
+	}
+	for d in status.details {
+		mut a := protobuf.Encoder{}
+		a.write_string_field(1, 'type.googleapis.com/' + d.type_name)
+		if d.value.len > 0 {
+			a.write_bytes_field(2, d.value)
+		}
+		e.write_message_field(3, a.buf)
+	}
+	return e.buf
+}
+
+// encode_bin_header renders a `-bin` metadata value: base64 without padding,
+// as grpc-go emits it (the spec has receivers accept padded and unpadded).
+fn encode_bin_header(b []u8) string {
+	return base64.encode(b).trim_right('=')
 }
 
 // leading response metadata rides as ordinary headers; repeated values repeat.
