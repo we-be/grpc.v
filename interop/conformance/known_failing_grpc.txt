@@ -1,10 +1,3 @@
 # gRPC-protocol conformance cases we knowingly do not pass yet, with why. The
 # runner REQUIRES these to fail (and fails if one starts passing), so this
 # doubles as a to-do list: delete a line the day we fix it.
-
-# A unary rpc sent zero or several request messages. The generated dispatch
-# (protobuf.v gen/grpc.v) answers invalid_argument "Unary expects exactly one
-# request message"; the suite wants connect-go's unimplemented. Changing the
-# code is a protobuf.v codegen change plus a stub regeneration here.
-**/unary/no-request
-**/unary/multiple-requests

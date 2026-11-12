@@ -77,7 +77,7 @@ pub fn (mut s RegistryService) grpc_call(path string, reqs [][]u8, mut ctx grpc.
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Put expects exactly one request message'
 					}
 				}
@@ -90,7 +90,7 @@ pub fn (mut s RegistryService) grpc_call(path string, reqs [][]u8, mut ctx grpc.
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Get expects exactly one request message'
 					}
 				}

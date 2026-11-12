@@ -123,7 +123,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Get expects exactly one request message'
 					}
 				}
@@ -136,7 +136,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Put expects exactly one request message'
 					}
 				}
@@ -149,7 +149,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Delete expects exactly one request message'
 					}
 				}
@@ -162,7 +162,7 @@ pub fn (mut s KVDService) grpc_call(path string, reqs [][]u8, mut ctx grpc.Serve
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code: .invalid_argument
+						code: .unimplemented
 						message: 'Range expects exactly one request message'
 					}
 				}

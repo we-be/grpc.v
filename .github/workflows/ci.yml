@@ -90,11 +90,11 @@ jobs:
         run: ./interop/connect_grpc_run.sh
 
       # Both servers: Connect vs ConnectServer (88/88) and gRPC over h2c vs
-      # GrpcServer (62/64, gaps in known_failing_grpc.txt). Linux-only: on
-      # macos/arm64 the suite trips a V stdlib bug — http.Server corrupts
-      # request bytes/headers under its request loop on arm64 (content-type
-      # reads stale, bodies get mis-decoded; layout/timing-sensitive). It is
-      # NOT in grpc.v or json2 (both verified clean in isolation on arm64).
+      # GrpcServer (64/64). Linux-only: on macos/arm64 the suite trips a V
+      # stdlib bug — http.Server corrupts request bytes/headers under its
+      # request loop on arm64 (content-type reads stale, bodies get
+      # mis-decoded; layout/timing-sensitive). It is NOT in grpc.v or json2
+      # (both verified clean in isolation on arm64).
       # Tracked for an upstream V fix; the other three interops still exercise
       # the server on macos.
       - name: Conformance (official suite, Connect + gRPC)

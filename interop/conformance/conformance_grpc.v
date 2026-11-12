@@ -128,7 +128,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code:    .unimplemented
 						message: 'Unary expects exactly one request message'
 					}
 				}
@@ -141,7 +141,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code:    .unimplemented
 						message: 'ServerStream expects exactly one request message'
 					}
 				}
@@ -166,7 +166,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code:    .unimplemented
 						message: 'Unimplemented expects exactly one request message'
 					}
 				}
@@ -179,7 +179,7 @@ pub fn (mut s ConformanceServiceService) grpc_call(path string, reqs [][]u8, mut
 			if reqs.len != 1 {
 				return grpc.StatusError{
 					status: grpc.Status{
-						code:    .invalid_argument
+						code:    .unimplemented
 						message: 'IdempotentUnary expects exactly one request message'
 					}
 				}

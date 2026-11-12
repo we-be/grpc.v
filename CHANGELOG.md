@@ -18,9 +18,7 @@ API freeze (roadmap: issue #1).
 ### Added
 - **The official conformance suite runs against `GrpcServer`** — gRPC over
   h2c, unary, proto — alongside the Connect run (`interop/conformance/run.sh`,
-  `config_grpc.yaml`): 62/64, the two gaps listed in `known_failing_grpc.txt`
-  (a unary rpc sent zero or several messages answers `invalid_argument` where
-  the suite wants `unimplemented`; that code lives in protobuf.v's codegen).
+  `config_grpc.yaml`): 64/64.
 - **Typed error details over native gRPC.** A `StatusError` with details now
   rides as a `grpc-status-details-bin` trailer (a base64 `google.rpc.Status`,
   unpadded as grpc-go emits it), so grpc-go and connect-go clients see them.
@@ -31,6 +29,10 @@ API freeze (roadmap: issue #1).
   default, means no limit. Connect conformance is now 88/88.
 
 ### Changed
+- **A unary rpc sent zero or several request messages is `unimplemented`**
+  (was `invalid_argument`), as connect-go answers it and the conformance suite
+  expects — the generated `grpc_call` dispatch, regenerated from protobuf.v's
+  `vpbgen -grpc`.
 - `GrpcServer` answers what the gRPC spec asks for on a request it cannot
   serve: a non-gRPC content-type gets a plain **HTTP 415** (was a gRPC-framed
   `internal`), a codec other than proto (`application/grpc+json`, …) is
