@@ -12,8 +12,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    # setup-v drops the whole V toolchain into the workspace root, and
-    # v fmt/test recurse — keep our tree in a subdir so they never meet
+    # v fmt/test recurse from the workspace root — keep our tree in a
+    # subdir so nothing else checked out there ever meets them
     defaults:
       run:
         working-directory: repo
@@ -22,16 +22,12 @@ jobs:
         with:
           path: repo
 
-      # no V release builds on current runners, so we pin a master commit.
-      # Pins rot: `make` bootstraps through whatever vlang/vc publishes
-      # today, and vc stops publishing for a commit master has moved past,
-      # so the old c918d7ce82 pin died in `make` with `./v2: No such file
-      # or directory` — nothing to do with our code. Re-pin to a fresh
-      # master commit when this one rots too.
+      # no V release builds on current runners, so we pin a master commit,
+      # built from the vc snapshot published just before it: setup-v's
+      # `make` bootstraps through whatever vlang/vc publishes today, and
+      # that rots pins (vlang/v#32312). See .github/setup-v.sh.
       - name: Setup V
-        uses: vlang/setup-v@v1
-        with:
-          version-file: repo/.v-version
+        run: ./.github/setup-v.sh
 
       # the interop suites build grpc-go / connect-go reference peers
       - name: Setup Go

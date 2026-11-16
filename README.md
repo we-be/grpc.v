@@ -26,7 +26,7 @@ focus.
 ## Requirements
 
 grpc.v tracks **V master**, pinned to the commit in [`.v-version`](.v-version)
-(what CI builds with; `vlang/setup-v` reads it directly). The native server needs
+(what CI builds with, via [`.github/setup-v.sh`](.github/setup-v.sh)). The native server needs
 HTTP/2 response trailers and h2c — merged upstream in
 [vlang/v#28066](https://github.com/vlang/v/pull/28066) (2026-08-11), not yet in
 a tagged release. The Connect server alone builds on stable V.
