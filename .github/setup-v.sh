@@ -14,17 +14,31 @@
 # usage: setup-v.sh [dir]   (dir defaults to $RUNNER_TEMP/v)
 set -eu
 
+# A runner's fetch can stall rather than fail (a macos-15-intel release
+# build sat 9 minutes on one blob, then died): abort a transfer that
+# drops under 1 KB/s for a minute, and retry the network steps.
+export GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=60
+retry() {
+	n=1
+	until "$@"; do
+		[ "$n" -ge 3 ] && return 1
+		n=$((n + 1))
+		echo "retrying ($n/3): $*" >&2
+		sleep 10
+	done
+}
+
 pin=$(tr -d '[:space:]' < "$(dirname "$0")/../.v-version")
 vroot=${1:-${RUNNER_TEMP:-/tmp}/v}
 
 git init --quiet "$vroot"
-git -C "$vroot" fetch --quiet --depth 1 https://github.com/vlang/v "$pin"
+retry git -C "$vroot" fetch --quiet --depth 1 https://github.com/vlang/v "$pin"
 git -C "$vroot" checkout --quiet FETCH_HEAD
 pin_date=$(git -C "$vroot" log -1 --format=%cI)
 
-git clone --quiet --filter=tree:0 --no-checkout https://github.com/vlang/vc "$vroot/vc"
+retry git clone --quiet --filter=tree:0 --no-checkout https://github.com/vlang/vc "$vroot/vc"
 vc=$(git -C "$vroot/vc" rev-list -1 --before="$pin_date" HEAD)
-git -C "$vroot/vc" checkout --quiet "$vc"
+retry git -C "$vroot/vc" checkout --quiet "$vc"
 echo "V $pin from vc $vc ($(git -C "$vroot/vc" log -1 --format=%s | cut -c1-80))"
 for c in "$vroot/vc/v.c" "$vroot/vc/v_win.c"; do
 	if [ -f "$c" ]; then
@@ -33,7 +47,7 @@ for c in "$vroot/vc/v.c" "$vroot/vc/v_win.c"; do
 done
 
 # fetch tcc as `make` would, then build from the vc checked out above
-make -C "$vroot" latest_tcc
+retry make -C "$vroot" latest_tcc
 make -C "$vroot" local=1
 
 if [ -n "${GITHUB_PATH:-}" ]; then
