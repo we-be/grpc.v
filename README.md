@@ -121,7 +121,7 @@ Pre-1.0 (**0.x**). Wire behavior (framing, trailers, Connect, status codes,
 error details) is proven against grpc-go, connect-go, and the official
 [Connect conformance suite](interop/conformance), and is stable. The V API is
 still converging and may break in any 0.x release. See
-[CHANGELOG.md](CHANGELOG.md).
+[CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md) for the road to 1.0.
 
 ## Examples
 
