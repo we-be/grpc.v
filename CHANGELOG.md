@@ -11,9 +11,9 @@ against grpc-go, connect-go, and the official Connect conformance suite, and is
 not expected to change. The **V API surface** is still converging and may break
 in any 0.x release. The native gRPC server landed in 0.3.0 and is proven
 against grpc-go and the official conformance suite's gRPC cases; 1.0 is the
-API freeze (roadmap: issue #1).
+API freeze (roadmap: [ROADMAP.md](ROADMAP.md), from issue #1).
 
-## [Unreleased]
+## [0.4.0] - 2026-11-16
 
 ### Added
 - **The official conformance suite runs against `GrpcServer`** — gRPC over
@@ -46,6 +46,10 @@ API freeze (roadmap: issue #1).
   it every call went out as HTTP/1.1 and failed. CI pins V ee35432ff0.
 - `canceled` passes conformance: V's `http.Server` now sends HTTP 499 for
   `canceled`, so that case left the known-failing list.
+
+### Notes
+- **Needs protobuf.v ≥ 1.3.0.** The checked-in stubs are regenerated with its
+  `vpbgen` and call its new 32-bit wire helpers (`protobuf.int32_wire`).
 
 ## [0.3.0] - 2026-08-11
 
