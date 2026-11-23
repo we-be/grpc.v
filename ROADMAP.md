@@ -59,6 +59,6 @@ grpc.v stays **0.x** until Gate 4; until then the V API may break in a minor.
 - [ ] review the 1.0 surface above for anything to rename or drop while 0.x
   still allows it; freeze it together with the stub shape in protobuf.v
   `gen/grpc.v` (a protobuf.v minor)
-- [ ] a scope-and-limitations section in the README (buffered streaming,
+- [x] a scope-and-limitations section in the README (buffered streaming,
   compression, the 8 MiB request-body cap, V master requirement)
 - [ ] cut **v1.0.0**, paired with that protobuf.v minor

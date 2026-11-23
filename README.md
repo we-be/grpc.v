@@ -115,6 +115,39 @@ curl -X POST localhost:8080/echo.Echo/Say \
   -H 'content-type: application/json' -d '{"text":"hi"}'
 ```
 
+## Scope and limitations
+
+What the 1.0 surface covers, and what it deliberately leaves out:
+
+- **Streaming is buffered.** Server- and client-streaming carry the whole
+  stream in one HTTP request and response (`![]Resp`, `[]Req`), so they fit
+  finite streams. `vpbgen` skips bidirectional rpcs, leaving a comment in their
+  place. Bidi and incremental streaming wait on an upstream `net.http`
+  streaming-handler API.
+- **Connect is unary.** `ConnectServer` serves unary rpcs over HTTP/1.1, proto
+  and JSON, POST only (no Connect GET). A streaming rpc is not routed there: it
+  answers 404 `unimplemented`. Serve streaming over `GrpcServer`.
+- **No compression.** The client sends uncompressed and rejects a compressed
+  response. `GrpcServer` answers a compressed request with `unimplemented` and
+  `grpc-accept-encoding: identity`; `ConnectServer` answers a non-identity
+  `content-encoding` with `unimplemented`.
+- **Size caps.** V's HTTP/2 server holds a request body in memory and refuses
+  one over 8 MiB (`RST_STREAM(REFUSED_STREAM)`), which bounds every
+  `GrpcServer` request, a buffered client stream included. A gRPC frame over
+  32 MiB (`grpc.max_frame_len`) is rejected by both the client and
+  `GrpcServer`. `max_receive_bytes` on either server sets a lower per-message
+  cap (`resource_exhausted`); `ConnectServer` checks it after V has read the
+  body, and V's HTTP/1.1 server does not cap the body itself.
+- **Transports.** `GrpcServer` serves TLS (ALPN h2) or cleartext h2c. The
+  `Client` speaks h2 over TLS only: a plain `http://` target falls back to
+  HTTP/1.1, which gRPC servers refuse. `ConnectServer` is plaintext HTTP/1.1;
+  terminate TLS in front of it.
+- **V master.** See [Requirements](#requirements): a pinned V commit, not a
+  release.
+- **Platforms.** CI runs Linux and macOS, but the conformance suite and the
+  grpc-go-client-vs-`GrpcServer` leg are Linux-only: on macos/arm64, V's
+  `http.Server` corrupts request bytes under its request loop.
+
 ## Stability
 
 Pre-1.0 (**0.x**). Wire behavior (framing, trailers, Connect, status codes,
